@@ -9,13 +9,45 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
+    /**
+     * @OA\Post(
+     *     path="/register",
+     *     operationId="register",
+     *     tags={"Auth"},
+     *     summary="Register new user by admin",
+     *     @OA\Response(
+     *         response="200",
+     *         description="Everything is fine",
+     *         @OA\JsonContent(ref="#/components/schemas/UserResource")
+     *     ),
+     *     @OA\Response(
+     *         response="401",
+     *         description="Unauthenticated",
+     *     ),
+     *     @OA\Response(
+     *         response="422",
+     *         description="The given data was invalid",
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(ref="#/components/schemas/RegisterRequest")
+     *     ),
+     *     security={
+     *       {"bearerAuth": {}},
+     *     },
+     * )
+     *
+     * @param Request $request
+     * @return Response
+     */
+    public function register(Request $request): Response
     {
         $fields = $request->validate([
             'name' => 'required|string',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|string',
         ]);
+
+        $fields['password'] = '12345';
 
         /**
          * @var $user User
@@ -36,6 +68,30 @@ class AuthController extends Controller
     }
 
     /**
+     * @OA\Post(
+     *     path="/login",
+     *     operationId="login",
+     *     tags={"Auth"},
+     *     summary="Login to get Auth Token",
+     *     @OA\Response(
+     *         response="200",
+     *         description="Everything is fine",
+     *         @OA\JsonContent(ref="#/components/schemas/LoginResource")
+     *     ),
+     *     @OA\Response(
+     *         response="401",
+     *         description="Bad Credentials",
+     *     ),
+     *     @OA\Response(
+     *         response="422",
+     *         description="The given data was invalid",
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(ref="#/components/schemas/LoginRequest")
+     *     ),
+     * )
+     *
      * @param Request $request
      * @return Response
      */
@@ -53,7 +109,6 @@ class AuthController extends Controller
 
         if(!$user || !Hash::check($fields['password'], $user->password)){
             return response([
-                'status' => 'failed',
                 'message' => 'Bad credentials',
             ], 401);
         }
@@ -61,15 +116,31 @@ class AuthController extends Controller
         $token = $user->createToken('myapptoken')->plainTextToken;
 
         $response = [
-            'status' => 'success',
             'user' => $user,
             'token' => $token,
         ];
-
         return response($response, 201);
     }
 
     /**
+     * @OA\Post(
+     *     path="/logout",
+     *     operationId="logout",
+     *     tags={"Auth"},
+     *     summary="Logout to remove Auth Token",
+     *     @OA\Response(
+     *         response="200",
+     *         description="Logged out",
+     *     ),
+     *     @OA\Response(
+     *         response="401",
+     *         description="Unauthenticated",
+     *     ),
+     *     security={
+     *       {"bearerAuth": {}},
+     *     },
+     * )
+     *
      * @param Request $request
      * @return array
      */
@@ -78,7 +149,6 @@ class AuthController extends Controller
         auth()->user()->tokens()->delete();
 
         return [
-            'status' => 'success',
             'message' => 'Logged out',
         ];
     }
