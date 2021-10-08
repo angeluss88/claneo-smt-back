@@ -604,20 +604,20 @@
     },
     "tags": [
         {
-            "name": "Auth",
-            "description": "API Endpoints of Authentication"
-        },
-        {
-            "name": "Users",
-            "description": "API Endpoints of Users"
-        },
-        {
             "name": "Account",
             "description": "API Endpoints of Current User"
         },
         {
+            "name": "Auth",
+            "description": "API Endpoints of Authentication"
+        },
+        {
             "name": "Roles",
             "description": "API Endpoints of Roles"
+        },
+        {
+            "name": "Users",
+            "description": "API Endpoints of Users"
         }
     ],
     "security": [
