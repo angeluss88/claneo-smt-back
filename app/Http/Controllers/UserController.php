@@ -19,7 +19,6 @@ class UserController extends Controller
 
         if(!$user) {
             return response([
-                'status' => 'failed',
                 'message' => 'User not found',
             ], 401);
         }
@@ -27,7 +26,6 @@ class UserController extends Controller
         $user->fill($fields)->save();
 
         return response([
-            'status' => 'success',
             'user' => $user,
         ], 201);
     }

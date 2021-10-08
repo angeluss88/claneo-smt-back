@@ -7,6 +7,7 @@
 5. npm run dev
 6. php artisan migrate
 7. php artisan db:seed --class=AdminSeeder
+8. php artisan db:seed --class=RoleSeeder
 
 ## Admin User
 To login firstly you should use email and password that you entered in .env as APP_ADMIN_EMAIL and APP_ADMIN_PASSWORD

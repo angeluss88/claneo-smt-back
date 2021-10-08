@@ -24,14 +24,25 @@ class UserResource
 
     /**
      * @OA\Property(
-     *     title="Name",
-     *     description="Name of user",
-     *     example="User",
+     *     title="first_name",
+     *     description="First Name of user",
+     *     example="John",
      * )
      *
      * @var string
      */
-    public $name;
+    public $first_name;
+
+    /**
+     * @OA\Property(
+     *     title="last_name",
+     *     description="Last Name of user",
+     *     example="Doe",
+     * )
+     *
+     * @var string
+     */
+    public $last_name;
 
     /**
      * @OA\Property(
@@ -76,4 +87,14 @@ class UserResource
      * @var string
      */
     public $updated_at;
+
+    /**
+     * @OA\Property(
+     *     title="roles",
+     *     type="array",
+     *     collectionFormat="multi",
+     *     @OA\Items(ref="#/components/schemas/RoleResource")
+     * )
+     */
+    public $roles;
 }

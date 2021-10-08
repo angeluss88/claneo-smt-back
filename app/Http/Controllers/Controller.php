@@ -41,6 +41,11 @@ class Controller extends BaseController
      *     description="API Endpoints of Current User"
      * )
      *
+     * * @OA\Tag(
+     *     name="Roles",
+     *     description="API Endpoints of Roles"
+     * )
+     *
      * @OA\SecurityScheme(
      *     type="http",
      *     scheme="header",

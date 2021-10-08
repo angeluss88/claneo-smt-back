@@ -191,6 +191,224 @@
                     }
                 ]
             }
+        },
+        "/roles": {
+            "get": {
+                "tags": [
+                    "Roles"
+                ],
+                "summary": "Index",
+                "operationId": "roles_index",
+                "responses": {
+                    "200": {
+                        "description": "Everything is fine",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "role": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/RoleResource"
+                                            },
+                                            "collectionFormat": "multi"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Roles"
+                ],
+                "summary": "Create Role",
+                "operationId": "roles_store",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RoleRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Everything is fine",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "role": {
+                                            "$ref": "#/components/schemas/RoleResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/roles/{role}": {
+            "get": {
+                "tags": [
+                    "Roles"
+                ],
+                "summary": "Show Role",
+                "operationId": "roles_show",
+                "parameters": [
+                    {
+                        "name": "role",
+                        "in": "path",
+                        "description": "The role id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Everything is fine",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "role": {
+                                            "$ref": "#/components/schemas/RoleResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "404": {
+                        "description": "Error: Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Roles"
+                ],
+                "summary": "Update Role",
+                "operationId": "roles_update",
+                "parameters": [
+                    {
+                        "name": "role",
+                        "in": "path",
+                        "description": "The role id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RoleRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Everything is fine",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "role": {
+                                            "$ref": "#/components/schemas/RoleResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "404": {
+                        "description": "Error: Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Roles"
+                ],
+                "summary": "Delete Role",
+                "operationId": "roles_delete",
+                "parameters": [
+                    {
+                        "name": "role",
+                        "in": "path",
+                        "description": "The role id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Everything is fine"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "404": {
+                        "description": "Error: Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
         }
     },
     "components": {
@@ -262,6 +480,62 @@
                 },
                 "type": "object"
             },
+            "RoleRequest": {
+                "title": "Role Request",
+                "description": "Role Request",
+                "properties": {
+                    "name": {
+                        "title": "name",
+                        "description": "Name of role",
+                        "type": "string",
+                        "example": "user"
+                    },
+                    "description": {
+                        "title": "description",
+                        "description": "Description of user",
+                        "type": "string",
+                        "example": "SImple User"
+                    }
+                },
+                "type": "object"
+            },
+            "RoleResource": {
+                "title": "Role Resource",
+                "description": "Role Resource",
+                "properties": {
+                    "id": {
+                        "title": "id",
+                        "description": "ID of Role",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "title": "name",
+                        "description": " Name of Role",
+                        "type": "string",
+                        "example": "SEO"
+                    },
+                    "description": {
+                        "title": "description",
+                        "description": "Description of role",
+                        "type": "string",
+                        "example": "SEO Manager"
+                    },
+                    "created_at": {
+                        "title": "created_at",
+                        "description": "created date of user",
+                        "type": "string",
+                        "example": "2021-10-07T19:34:40.000000Z"
+                    },
+                    "updated_at": {
+                        "title": "updated_at",
+                        "description": "updated date of user",
+                        "type": "string",
+                        "example": "2021-10-07T19:34:40.000000Z"
+                    }
+                },
+                "type": "object"
+            },
             "UserResource": {
                 "title": "User Resource",
                 "description": "User Resource",
@@ -272,11 +546,17 @@
                         "type": "integer",
                         "example": 1
                     },
-                    "name": {
-                        "title": "Name",
-                        "description": "Name of user",
+                    "first_name": {
+                        "title": "first_name",
+                        "description": "First Name of user",
                         "type": "string",
-                        "example": "User"
+                        "example": "John"
+                    },
+                    "last_name": {
+                        "title": "last_name",
+                        "description": "Last Name of user",
+                        "type": "string",
+                        "example": "Doe"
                     },
                     "email": {
                         "title": "Email",
@@ -301,6 +581,14 @@
                         "description": "updated date of user",
                         "type": "string",
                         "example": "2021-10-07T19:34:40.000000Z"
+                    },
+                    "roles": {
+                        "title": "roles",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RoleResource"
+                        },
+                        "collectionFormat": "multi"
                     }
                 },
                 "type": "object"
@@ -326,6 +614,10 @@
         {
             "name": "Account",
             "description": "API Endpoints of Current User"
+        },
+        {
+            "name": "Roles",
+            "description": "API Endpoints of Roles"
         }
     ],
     "security": [

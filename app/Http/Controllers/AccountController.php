@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
@@ -46,16 +47,18 @@ class AccountController extends Controller
         ]);
 
         $user = $request->user();
+        $user = User::with('roles')->find($request->user()->id);
 
         if(!$user) {
             return response([
-                'status' => 'failed',
                 'message' => 'User not found',
             ], 401);
         }
 
         $user->password = Hash::make($fields['password']);
         $user->save();
+
+
 
         return response([
             'user' => $user,
@@ -85,8 +88,9 @@ class AccountController extends Controller
      */
     public function show(Request $request)
     {
+        $user = User::with('roles')->find($request->user()->id);
         return response([
-            'user' => $request->user(),
+            'user' => $user,
         ], 200);
     }
 }

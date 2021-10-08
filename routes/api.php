@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -30,6 +31,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/account/edit', [AccountController::class, 'edit']);
 
     Route::post('/user/{id}/edit', [UserController::class, 'edit']);
+
+    Route::resource('roles', RoleController::class);
 });
 
 
