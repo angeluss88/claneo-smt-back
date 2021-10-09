@@ -65,6 +65,7 @@ class User extends Authenticatable
         'last_name',
         'email',
         'password',
+        'privacy_policy_flag',
     ];
 
     /**
@@ -75,7 +76,6 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
-        'is_admin',
     ];
 
     /**

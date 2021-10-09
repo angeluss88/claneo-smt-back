@@ -68,6 +68,17 @@ class UserResource
 
     /**
      * @OA\Property(
+     *     title="privacy_policy_flag",
+     *     description="Has the user read the privacy policy??",
+     *     example=0,
+     * )
+     *
+     * @var integer
+     */
+    public $privacy_policy_flag;
+
+    /**
+     * @OA\Property(
      *     title="created_at",
      *     description="created date of user",
      *     example="2021-10-07T19:34:40.000000Z"

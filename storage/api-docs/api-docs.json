@@ -845,6 +845,12 @@
                         "type": "string",
                         "example": "NULL"
                     },
+                    "privacy_policy_flag": {
+                        "title": "privacy_policy_flag",
+                        "description": "Has the user read the privacy policy??",
+                        "type": "integer",
+                        "example": 0
+                    },
                     "created_at": {
                         "title": "created_at",
                         "description": "created date of user",
@@ -889,6 +895,12 @@
                         "description": "Email of user",
                         "type": "string",
                         "example": "user@loc"
+                    },
+                    "privacy_policy_flag": {
+                        "title": "privacy_policy_flag",
+                        "description": "Has the user read the privacy policy?",
+                        "type": "integer",
+                        "example": 0
                     },
                     "password": {
                         "title": "Password",

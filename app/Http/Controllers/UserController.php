@@ -257,11 +257,15 @@ class UserController extends Controller
                 'email',
                 Rule::unique('users')->ignore($user->id),
             ],
+            'privacy_policy_flag' => 'boolean',
             'password' => 'string',
             'roles' => 'array',
         ]);
 
-        $user->roles()->sync($fields['roles']);
+        if(isset($fields['roles']) && !empty($fields['roles'])) {
+            $user->roles()->sync($fields['roles']);
+        }
+
         $user->fill($fields)->save();
 
         return response([

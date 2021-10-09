@@ -46,6 +46,17 @@ class UserUpdateRequest
 
     /**
      * @OA\Property(
+     *     title="privacy_policy_flag",
+     *     description="Has the user read the privacy policy?",
+     *     example=0,
+     * )
+     *
+     * @var integer
+     */
+    public $privacy_policy_flag;
+
+    /**
+     * @OA\Property(
      *     title="Password",
      *     description="Password of user",
      *     example="12345",
