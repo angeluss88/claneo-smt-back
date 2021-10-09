@@ -12,11 +12,11 @@
 ## Admin User
 To login firstly you should use email and password that you entered in .env as APP_ADMIN_EMAIL and APP_ADMIN_PASSWORD
 
-##API docs 
+## API docs 
 You can find API docs by URL /api/documentation.
 
 You should log in using "/login" endpoint - it will return Bearer token that you can paste in modal window after 
 pressing "Authorize" button - after that You'll be able to use locked methods
 
-##Contributors
+## Contributors
 mrudchenko@brightgrove.com

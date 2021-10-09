@@ -30,7 +30,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/account', [AccountController::class, 'show']);
     Route::post('/account/edit', [AccountController::class, 'edit']);
 
-    Route::post('/user/{id}/edit', [UserController::class, 'edit']);
+    Route::put('/users/{user}', [UserController::class, 'update']);
+    Route::get('/users', [UserController::class, 'index']);
+    Route::get('/users/{user}', [UserController::class, 'show']);
+    Route::delete('/users/{user}', [UserController::class, 'destroy']);
 
     Route::resource('roles', RoleController::class);
 });
