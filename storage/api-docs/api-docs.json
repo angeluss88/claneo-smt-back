@@ -97,6 +97,7 @@
                     "Auth"
                 ],
                 "summary": "Register new user by admin",
+                "description": "Accessible for only User with the 'Admin' Role",
                 "operationId": "register",
                 "requestBody": {
                     "required": true,

@@ -18,6 +18,7 @@ class AuthController extends Controller
      * @OA\Post(
      *     path="/register",
      *     operationId="register",
+     *     description="Accessible for only User with the 'Admin' Role",
      *     tags={"Auth"},
      *     summary="Register new user by admin",
      *     @OA\Response(
