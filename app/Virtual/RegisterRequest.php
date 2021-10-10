@@ -21,4 +21,37 @@ class RegisterRequest
      * @var string
      */
     public $email;
+
+    /**
+     * @OA\Property(
+     *     title="first_name",
+     *     description="first_name of user",
+     *     example="John",
+     * )
+     *
+     * @var string
+     */
+    public $first_name;
+
+    /**
+     * @OA\Property(
+     *     title="last_name",
+     *     description="last_name of user",
+     *     example="Doe",
+     * )
+     *
+     * @var string
+     */
+    public $last_name;
+
+    /**
+     * @OA\Property(
+     *     title="roles",
+     *     description="Roles of user",
+     *     example={5, 6},
+     * )
+     *
+     * @var string
+     */
+    public $roles;
 }

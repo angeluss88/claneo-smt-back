@@ -19,8 +19,8 @@ use App\Http\Controllers\AuthController;
 */
 
 //Public routes
-Route::post('/login', [AuthController::class, 'login']);
-//Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login'])->middleware('guest');
+Route::post('/change-pwd', [AuthController::class, 'changePassword'])->middleware('guest');
 
 //Protected routes
 Route::middleware(['auth:sanctum'])->group(function () {

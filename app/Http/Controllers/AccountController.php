@@ -58,11 +58,9 @@ class AccountController extends Controller
         $user->password = Hash::make($fields['password']);
         $user->save();
 
-
-
         return response([
             'user' => $user,
-        ], 201);
+        ], 200);
     }
 
     /**

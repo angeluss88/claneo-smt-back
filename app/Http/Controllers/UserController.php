@@ -147,7 +147,7 @@ class UserController extends Controller
      */
     public function index(): Response
     {
-        $users = User::with('roles')->paginate(1); //@TODO paginate
+        $users = User::with('roles')->paginate(5);
 
         return response([
             'users' => $users,
@@ -270,7 +270,7 @@ class UserController extends Controller
 
         return response([
             'user' => User::with('roles')->find($user->id),
-        ], 201);
+        ], 200);
     }
 
     /**

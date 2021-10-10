@@ -29,12 +29,12 @@ class Controller extends BaseController
      * )
      *
      * @OA\Tag(
-     *     name="Account",
-     *     description="API Endpoints of Current User"
-     * )
-     * @OA\Tag(
      *     name="Auth",
      *     description="API Endpoints of Authentication"
+     * )
+     * @OA\Tag(
+     *     name="Account",
+     *     description="API Endpoints of Current User"
      * )
      * @OA\Tag(
      *     name="Roles",

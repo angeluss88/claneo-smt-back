@@ -57,17 +57,6 @@ class UserUpdateRequest
 
     /**
      * @OA\Property(
-     *     title="Password",
-     *     description="Password of user",
-     *     example="12345",
-     * )
-     *
-     * @var string
-     */
-    public $password;
-
-    /**
-     * @OA\Property(
      *     title="roles",
      *     description="Roles of user",
      *     example={5, 6},

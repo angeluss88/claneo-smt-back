@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Database\Factories\UserFactory;
 use Eloquent;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -26,7 +25,7 @@ use Laravel\Sanctum\PersonalAccessToken;
  * @property string $email
  * @property Carbon|null $email_verified_at
  * @property string $password
- * @property int $is_admin
+ * @property int $privacy_policy_flag
  * @property string|null $remember_token
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at

@@ -166,6 +166,9 @@
                     },
                     "422": {
                         "description": "The given data was invalid"
+                    },
+                    "403": {
+                        "description": "User should accept Privacy Policy first"
                     }
                 }
             }
@@ -190,6 +193,45 @@
                         "bearerAuth": []
                     }
                 ]
+            }
+        },
+        "/change-pwd": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Change password for non-logged user",
+                "operationId": "change-pwd",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangePasswordRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Everything is fine",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "user": {
+                                            "$ref": "#/components/schemas/UserResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "The given data was invalid"
+                    }
+                }
             }
         },
         "/roles": {
@@ -694,6 +736,37 @@
     },
     "components": {
         "schemas": {
+            "ChangePasswordRequest": {
+                "title": "Change Password Request",
+                "description": "Change Password Request",
+                "properties": {
+                    "email": {
+                        "title": "Email",
+                        "description": "Email of user",
+                        "type": "string",
+                        "example": "user@loc"
+                    },
+                    "password": {
+                        "title": "Password",
+                        "description": "Password of user",
+                        "type": "string",
+                        "example": "12345"
+                    },
+                    "password_confirmation": {
+                        "title": "password_confirmation",
+                        "description": "Enter the same password again",
+                        "type": "string",
+                        "example": "12345"
+                    },
+                    "token": {
+                        "title": "Token",
+                        "description": "Token from Email",
+                        "type": "string",
+                        "example": "noC1CHhmimTuwFpx"
+                    }
+                },
+                "type": "object"
+            },
             "EditUserRequest": {
                 "title": "Edit User Request",
                 "description": "Edit User Request",
@@ -751,6 +824,27 @@
                         "description": "Email of user",
                         "type": "string",
                         "example": "user@loc"
+                    },
+                    "first_name": {
+                        "title": "first_name",
+                        "description": "first_name of user",
+                        "type": "string",
+                        "example": "John"
+                    },
+                    "last_name": {
+                        "title": "last_name",
+                        "description": "last_name of user",
+                        "type": "string",
+                        "example": "Doe"
+                    },
+                    "roles": {
+                        "title": "roles",
+                        "description": "Roles of user",
+                        "type": "string",
+                        "example": [
+                            5,
+                            6
+                        ]
                     }
                 },
                 "type": "object"
@@ -902,12 +996,6 @@
                         "type": "integer",
                         "example": 0
                     },
-                    "password": {
-                        "title": "Password",
-                        "description": "Password of user",
-                        "type": "string",
-                        "example": "12345"
-                    },
                     "roles": {
                         "title": "roles",
                         "description": "Roles of user",
@@ -931,12 +1019,12 @@
     },
     "tags": [
         {
-            "name": "Account",
-            "description": "API Endpoints of Current User"
-        },
-        {
             "name": "Auth",
             "description": "API Endpoints of Authentication"
+        },
+        {
+            "name": "Account",
+            "description": "API Endpoints of Current User"
         },
         {
             "name": "Roles",
