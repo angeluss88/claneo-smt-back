@@ -14,7 +14,7 @@ class AccountController extends Controller
      *     path="/account/edit",
      *     operationId="editAccount",
      *     tags={"Account"},
-     *     summary="Edit current user's account",
+     *     summary="Edit current user's account. In progress...",
      *     @OA\Response(
      *         response="200",
      *         description="Everything is fine",

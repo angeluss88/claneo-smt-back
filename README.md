@@ -8,13 +8,14 @@
 
 1. clone the repo
 2. cp .env.example to .env and fill the data
-3. php artisan key:generate
-4. composer install
+3. composer install
+4. php artisan key:generate
 5. npm install
 6. npm run dev
 7. php artisan migrate
 8. php artisan db:seed --class=RoleSeeder
 9. php artisan db:seed --class=AdminSeeder
+10. php artisan serve (optional. You can instead configure the host for it )
 
 ## Admin User
 To login firstly you should use email and password that you entered in .env as APP_ADMIN_EMAIL and APP_ADMIN_PASSWORD
