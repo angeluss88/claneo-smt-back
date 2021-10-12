@@ -15,7 +15,6 @@
             {{ __('Account has been created for you. Please find your credentials below') }}:
         </p>
         <p style="text-align: center; font-weight: bold">{{ 'Email: ' . ' ' . $details['email'] }}</p>
-        <p style="text-align: center; font-weight: bold">{{ __('Password: ') . ' ' . $details['password'] }}</p>
         <p style="text-align: center">{{ __('Please confirm your email address to activate your account.') }}</p>
         <p style="text-align: center">⬇</p>
         <p style="text-align: center"><a href="{{ $details['url'] }}">{{ __('Confirm email ') }}</a></p>

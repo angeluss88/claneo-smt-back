@@ -1,13 +1,20 @@
+## Requirements
+1. PHP 7.3+
+2. PHP Modules: cli common json opcache mysql mbstring mcrypt zip fpm xml
+3. MySql 5.7+
+4. apache2
+
 ## Installation
 
 1. clone the repo
 2. cp .env.example to .env and fill the data
-3. composer install
-4. npm install
-5. npm run dev
-6. php artisan migrate
-7. php artisan db:seed --class=AdminSeeder
+3. php artisan key:generate
+4. composer install
+5. npm install
+6. npm run dev
+7. php artisan migrate
 8. php artisan db:seed --class=RoleSeeder
+9. php artisan db:seed --class=AdminSeeder
 
 ## Admin User
 To login firstly you should use email and password that you entered in .env as APP_ADMIN_EMAIL and APP_ADMIN_PASSWORD
