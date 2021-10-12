@@ -30,10 +30,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/account', [AccountController::class, 'show']);
     Route::post('/account/edit', [AccountController::class, 'edit']);
 
-    Route::put('/users/{user}', [UserController::class, 'update']);
+    Route::put('/users/{user}', [UserController::class, 'update'])->middleware('role:admin');
     Route::get('/users', [UserController::class, 'index']);
     Route::get('/users/{user}', [UserController::class, 'show']);
-    Route::delete('/users/{user}', [UserController::class, 'destroy']);
+    Route::delete('/users/{user}', [UserController::class, 'destroy'])->middleware('role:admin');
 
     Route::resource('roles', RoleController::class);
 });
