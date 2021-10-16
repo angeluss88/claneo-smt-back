@@ -7,7 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class SetPasswordLinkMail extends Mailable
+class ForgotPasswordLinkMail extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -28,10 +28,10 @@ class SetPasswordLinkMail extends Mailable
      *
      * @return $this
      */
-    public function build(): SetPasswordLinkMail
+    public function build(): ForgotPasswordLinkMail
     {
-        return $this->subject('SEO Management Tool: Confirm your email address')
+        return $this->subject('SEO Management Tool: Forgot password')
             ->from('no-reply@claneo.com')
-            ->view('emails.setPasswordMail');
+            ->view('emails.forgotPasswordMail');
     }
 }

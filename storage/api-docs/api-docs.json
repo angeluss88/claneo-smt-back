@@ -24,7 +24,7 @@
                 "tags": [
                     "Account"
                 ],
-                "summary": "Edit current user's account",
+                "summary": "Edit current user's account. In progress...",
                 "operationId": "editAccount",
                 "requestBody": {
                     "required": true,
@@ -209,6 +209,45 @@
                         "application/json": {
                             "schema": {
                                 "$ref": "#/components/schemas/ChangePasswordRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Everything is fine",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "user": {
+                                            "$ref": "#/components/schemas/UserResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "The given data was invalid"
+                    }
+                }
+            }
+        },
+        "/forgot-pwd": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Send reset password link",
+                "operationId": "forgot-pwd",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ForgotPasswordRequest"
                             }
                         }
                     }
@@ -777,6 +816,19 @@
                         "description": "Password of user",
                         "type": "string",
                         "example": "12345"
+                    }
+                },
+                "type": "object"
+            },
+            "ForgotPasswordRequest": {
+                "title": "Reset Password Request",
+                "description": "Reset Password Request",
+                "properties": {
+                    "email": {
+                        "title": "Email",
+                        "description": "Email of user",
+                        "type": "string",
+                        "example": "user@loc"
                     }
                 },
                 "type": "object"

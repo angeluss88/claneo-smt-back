@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\ForgotPasswordLinkMail;
 use App\Mail\SetPasswordLinkMail;
 use Carbon\Carbon;
 use DB;
@@ -253,5 +254,71 @@ class AuthController extends Controller
         return response([
             'message' => 'The given data is invalid',
         ], 422);
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/forgot-pwd",
+     *     operationId="forgot-pwd",
+     *     tags={"Auth"},
+     *     summary="Send reset password link",
+     *     @OA\Response(
+     *         response="200",
+     *         description="Everything is fine",
+     *         @OA\JsonContent(
+     *             @OA\Property(
+     *             property="user",
+     *             type="object",
+     *             ref="#/components/schemas/UserResource",
+     *         )),
+     *     ),
+     *     @OA\Response(
+     *         response="422",
+     *         description="The given data was invalid",
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(ref="#/components/schemas/ForgotPasswordRequest")
+     *     ),
+     * )
+     *
+     * @param Request $request
+     * @return Response
+     */
+    public function forgotPassword(Request $request): Response
+    {
+        $fields = $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        $user = User::where('email', $fields['email'])->first();
+
+        if(!$user){
+            return response([
+                'message' => 'The given data is invalid',
+            ], 422);
+        }
+
+        $token = Str::random();
+        $created_at = Carbon::now();
+
+        DB::table('password_resets')->insert([
+            'email' => $fields['email'],
+            'token' => $token,
+            'created_at' => $created_at,
+        ]);
+
+        $details = [
+            'firstname' => $user['first_name'],
+            'email' => $user['email'],
+            'url' => env('FRONT_URL') . env('RESET_PASSWORD_LINK') . '/' . $token,
+            'valid_until' => $created_at->addDay()->format('Y-m-d H:i'),
+        ];
+
+        Mail::to($user['email'])->send(new ForgotPasswordLinkMail($details));
+
+        return response([
+            'user' => $user,
+        ], 200);
     }
 }
