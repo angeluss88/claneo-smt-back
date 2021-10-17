@@ -5,17 +5,17 @@ namespace App\Virtual;
 /**
  * @OA\Schema(
  *     type="object",
- *     title="Role Request",
- *     description="Role Request",
+ *     title="Client Request",
+ *     description="Client Request",
  * )
  */
-class RoleRequest
+class ClientRequest
 {
     /**
      * @OA\Property(
      *     title="name",
-     *     description="Name of role",
-     *     example="role",
+     *     description="Name of Client Company",
+     *     example="Company",
      * )
      *
      * @var string
@@ -25,11 +25,11 @@ class RoleRequest
     /**
      * @OA\Property(
      *     title="description",
-     *     description="Description of role",
-     *     example="Simple Role",
+     *     description="ID of user to assign",
+     *     example="2",
      * )
      *
-     * @var string
+     * @var integer
      */
-    public $description;
+    public $user_id;
 }

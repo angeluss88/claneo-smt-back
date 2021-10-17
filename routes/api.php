@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\ClientController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
@@ -37,6 +38,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->middleware('role:admin');
 
     Route::resource('roles', RoleController::class);
+    Route::resource('clients', ClientController::class);
 });
 
 

@@ -18,7 +18,7 @@ class LoginResource
      *     @OA\Schema(ref="#/components/schemas/UserResource"),
      * )
      *
-     *  @var UserResource
+     *  @var ClientResource
      */
     public $user;
 

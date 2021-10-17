@@ -2,25 +2,25 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use App\Models\Client;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
 
-class UserController extends Controller
+class ClientController extends Controller
 {
     /**
      * @OA\Get(
-     *     path="/users",
-     *     operationId="users_index",
-     *     tags={"Users"},
-     *     summary="List of users",
+     *     path="/clients",
+     *     operationId="clients_index",
+     *     tags={"Clients"},
+     *     summary="Client Companies List",
      *     @OA\Response(
      *         response="200",
      *         description="Everything is fine",
      *         @OA\JsonContent(
      *             @OA\Property(
-     *                 property="users",
+     *                 property="clients",
      *                 type="array",
      *                 collectionFormat="multi",
      *                 @OA\Items(
@@ -33,14 +33,14 @@ class UserController extends Controller
      *                          property="data",
      *                          type="array",
      *                          collectionFormat="multi",
-     *                          @OA\Items(ref="#/components/schemas/UserResource")
+     *                          @OA\Items(ref="#/components/schemas/ClientResource")
      *                     )
      *                 ),
      *             ),
      *             @OA\Property(
      *                 property="first_page_url",
      *                 type="string",
-     *                 example="http://127.0.0.1:8000/api/users?page=1",
+     *                 example="http://127.0.0.1:8000/api/clients?page=1",
      *             ),
      *             @OA\Property(
      *                 property="from",
@@ -55,7 +55,7 @@ class UserController extends Controller
      *             @OA\Property(
      *                 property="last_page_url",
      *                 type="string",
-     *                 example="http://127.0.0.1:8000/api/users?page=4",
+     *                 example="http://127.0.0.1:8000/api/clients?page=4",
      *             ),
      *             @OA\Property(
      *                 property="links",
@@ -65,23 +65,23 @@ class UserController extends Controller
      *                     "label": "&laquo; Previous",
      *                     "active": false
      *                 }, {
-     *                     "url": "http://127.0.0.1:8000/api/users?page=1",
+     *                     "url": "http://127.0.0.1:8000/api/clients?page=1",
      *                     "label": "1",
      *                     "active": true
      *                 }, {
-     *                     "url": "http://127.0.0.1:8000/api/users?page=2",
+     *                     "url": "http://127.0.0.1:8000/api/clients?page=2",
      *                     "label": "2",
      *                     "active": false
      *                 }, {
-     *                     "url": "http://127.0.0.1:8000/api/users?page=3",
+     *                     "url": "http://127.0.0.1:8000/api/clients?page=3",
      *                     "label": "3",
      *                     "active": false
      *                 }, {
-     *                     "url": "http://127.0.0.1:8000/api/users?page=4",
+     *                     "url": "http://127.0.0.1:8000/api/clients?page=4",
      *                     "label": "4",
      *                     "active": false
      *                 }, {
-     *                     "url": "http://127.0.0.1:8000/api/users?page=2",
+     *                     "url": "http://127.0.0.1:8000/api/clients?page=2",
      *                     "label": "Next &raquo;",
      *                     "active": false
      *                 }},
@@ -106,12 +106,12 @@ class UserController extends Controller
      *             @OA\Property(
      *                 property="next_page_url",
      *                 type="string",
-     *                 example="http://127.0.0.1:8000/api/users?page=2",
+     *                 example="http://127.0.0.1:8000/api/clients?page=2",
      *             ),
      *             @OA\Property(
      *                 property="path",
      *                 type="string",
-     *                 example="http://127.0.0.1:8000/api/users",
+     *                 example="http://127.0.0.1:8000/api/clients",
      *             ),
      *             @OA\Property(
      *                 property="per_page",
@@ -147,97 +147,36 @@ class UserController extends Controller
      */
     public function index(): Response
     {
-        $users = User::with('roles')->paginate(5);
+        $clients = Client::with('user')->paginate(5);
 
         return response([
-            'users' => $users,
+            'clients' => $clients,
         ], 200);
     }
 
     /**
-     * @OA\Get(
-     *     path="/users/{user}",
-     *     operationId="users_show",
-     *     tags={"Users"},
-     *     summary="Show User",
+     * @OA\Post (
+     *     path="/clients",
+     *     operationId="clients_store",
+     *     tags={"Clients"},
+     *     summary="Create Client Company",
      *     @OA\Response(
-     *         response="200",
+     *         response="201",
      *         description="Everything is fine",
      *         @OA\JsonContent(
      *             @OA\Property(
-     *             property="user",
+     *             property="role",
      *             type="object",
-     *             ref="#/components/schemas/UserResource",
-     *         )),
+     *             ref="#/components/schemas/ClientResource",
+     *         ))
      *     ),
      *     @OA\Response(
      *         response="401",
      *         description="Unauthenticated",
-     *     ),
-     *     @OA\Response(
-     *         response="404",
-     *         description="Error: Not Found",
-     *     ),
-     *     @OA\Parameter(
-     *         name="user",
-     *         in="path",
-     *         description="The user id",
-     *         required=true,
-     *         @OA\Schema(
-     *             type="integer",
-     *         )
-     *     ),
-     *     security={
-     *       {"bearerAuth": {}},
-     *     },
-     * )
-     *
-     * @param User $user
-     * @return Response
-     */
-    public function show(User $user): Response
-    {
-        return response([
-            'user' => User::with(['roles', 'client'])->find($user->id),
-        ], 200);
-    }
-
-    /**
-     * @OA\Put(
-     *     path="/users/{user}",
-     *     operationId="users_update",
-     *     tags={"Users"},
-     *     summary="Update User",
-     *     @OA\Response(
-     *         response="200",
-     *         description="Everything is fine",
-     *         @OA\JsonContent(
-     *             @OA\Property(
-     *             property="user",
-     *             type="object",
-     *             ref="#/components/schemas/UserResource",
-     *         )),
-     *     ),
-     *     @OA\Response(
-     *         response="401",
-     *         description="Unauthenticated",
-     *     ),
-     *     @OA\Response(
-     *         response="404",
-     *         description="Error: Not Found",
-     *     ),
-     *     @OA\Parameter(
-     *         name="user",
-     *         in="path",
-     *         description="The user id",
-     *         required=true,
-     *         @OA\Schema(
-     *             type="integer",
-     *         )
      *     ),
      *     @OA\RequestBody(
      *         required=true,
-     *         @OA\JsonContent(ref="#/components/schemas/UserUpdateRequest")
+     *         @OA\JsonContent(ref="#/components/schemas/ClientRequest")
      *     ),
      *     security={
      *       {"bearerAuth": {}},
@@ -245,40 +184,140 @@ class UserController extends Controller
      * )
      *
      * @param Request $request
-     * @param User $user
      * @return Response
      */
-    public function update(Request $request, User $user): Response
+    public function store(Request $request): Response
     {
         $fields = $request->validate([
-            'first_name' => 'string|max:100',
-            'last_name' => 'string|max:100',
-            'email' => [
-                'email',
-                Rule::unique('users')->ignore($user->id),
-            ],
-            'privacy_policy_flag' => 'boolean',
-            'password' => 'string',
-            'roles' => 'array',
+            'name' => 'required|unique:clients,name|string|max:100',
+            'user_id' => 'integer',
         ]);
 
-        if(isset($fields['roles']) && !empty($fields['roles'])) {
-            $user->roles()->sync($fields['roles']);
-        }
-
-        $user->fill($fields)->save();
+        $client = Client::create($fields);
 
         return response([
-            'user' => User::with('roles')->find($user->id),
+            'client' => $client,
+        ], 201);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/clients/{client}",
+     *     operationId="clients_show",
+     *     tags={"Clients"},
+     *     summary="Show Client Company",
+     *     @OA\Response(
+     *         response="200",
+     *         description="Everything is fine",
+     *         @OA\JsonContent(
+     *             @OA\Property(
+     *             property="client",
+     *             type="object",
+     *             ref="#/components/schemas/ClientResource",
+     *         )),
+     *     ),
+     *     @OA\Response(
+     *         response="401",
+     *         description="Unauthenticated",
+     *     ),
+     *     @OA\Response(
+     *         response="404",
+     *         description="Error: Not Found",
+     *     ),
+     *     @OA\Parameter(
+     *         name="client",
+     *         in="path",
+     *         description="The client id",
+     *         required=true,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     security={
+     *       {"bearerAuth": {}},
+     *     },
+     * )
+     *
+     * @param  Client $client
+     * @return Response
+     */
+    public function show(Client $client): Response
+    {
+        return response([
+            'client' => Client::with(['user'])->find($client->id),
+        ], 200);
+    }
+
+    /**
+     * @OA\Put(
+     *     path="/clients/{client}",
+     *     operationId="clients_update",
+     *     tags={"Clients"},
+     *     summary="Update Client Company",
+     *     @OA\Response(
+     *         response="200",
+     *         description="Everything is fine",
+     *         @OA\JsonContent(
+     *             @OA\Property(
+     *             property="client",
+     *             type="object",
+     *             ref="#/components/schemas/ClientResource",
+     *         )),
+     *     ),
+     *     @OA\Response(
+     *         response="401",
+     *         description="Unauthenticated",
+     *     ),
+     *     @OA\Response(
+     *         response="404",
+     *         description="Error: Not Found",
+     *     ),
+     *     @OA\Parameter(
+     *         name="client",
+     *         in="path",
+     *         description="The client id",
+     *         required=true,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(ref="#/components/schemas/ClientRequest")
+     *     ),
+     *     security={
+     *       {"bearerAuth": {}},
+     *     },
+     * )
+     *
+     * @param Request $request
+     * @param  Client  $client
+     * @return Response
+     */
+    public function update(Request $request, Client $client): Response
+    {
+        $fields = $request->validate([
+            'name' => [
+                'string',
+                'max|255',
+                Rule::unique('clients')->ignore($client->id),
+            ],
+            'user_id' => 'integer',
+        ]);
+
+        $client->fill($fields)->save();
+
+        return response([
+            'client' => $client,
         ], 200);
     }
 
     /**
      * @OA\Delete (
-     *     path="/users/{user}",
-     *     operationId="users_delete",
-     *     tags={"Users"},
-     *     summary="Delete User",
+     *     path="/clients/{client}",
+     *     operationId="clients_delete",
+     *     tags={"Clients"},
+     *     summary="Delete Client Company",
      *     @OA\Response(
      *         response="204",
      *         description="Everything is fine",
@@ -292,9 +331,9 @@ class UserController extends Controller
      *         description="Error: Not Found",
      *     ),
      *     @OA\Parameter(
-     *         name="user",
+     *         name="client",
      *         in="path",
-     *         description="The user id",
+     *         description="The client id",
      *         required=true,
      *         @OA\Schema(
      *             type="integer",
@@ -305,12 +344,12 @@ class UserController extends Controller
      *     },
      * )
      *
-     * @param User $user
+     * @param  Client $client
      * @return Response
      */
-    public function destroy(User $user): Response
+    public function destroy(Client $client): Response
     {
-        $user->delete();
+        $client->delete();
 
         return response([], 204);
     }

@@ -13,7 +13,7 @@ class RoleController extends Controller
      *     path="/roles",
      *     operationId="roles_index",
      *     tags={"Roles"},
-     *     summary="Index",
+     *     summary="List of Roles",
      *     @OA\Response(
      *         response="200",
      *         description="Everything is fine",
@@ -47,7 +47,7 @@ class RoleController extends Controller
 
     /**
      *
-     *@OA\Post (
+     * @OA\Post (
      *     path="/roles",
      *     operationId="roles_store",
      *     tags={"Roles"},

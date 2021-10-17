@@ -54,6 +54,7 @@ class AuthController extends Controller
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
             'roles' => 'array',
+            'client' => 'integer',
         ]);
 
         $fields['password'] = Str::random();
