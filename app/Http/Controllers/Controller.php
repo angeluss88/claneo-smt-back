@@ -12,7 +12,7 @@ class Controller extends BaseController
     /**
      * @OA\Info(
      *      version="1.0.0",
-     *      title="Claneo SMT BackendApi Documentation",
+     *      title="Claneo SMT Backend Api Documentation",
      *      description="Claneo SMT BackendApi",
      *      @OA\Contact(
      *          email="mrudchenko@brightgrove.com"

@@ -1,7 +1,7 @@
 {
     "openapi": "3.0.0",
     "info": {
-        "title": "Claneo SMT BackendApi Documentation",
+        "title": "Claneo SMT Backend Api Documentation",
         "description": "Claneo SMT BackendApi",
         "contact": {
             "email": "mrudchenko@brightgrove.com"
