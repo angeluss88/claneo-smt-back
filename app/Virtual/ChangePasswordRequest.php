@@ -54,4 +54,15 @@ class ChangePasswordRequest
      * @var string
      */
     public $token;
+
+    /**
+     * @OA\Property(
+     *     title="privacy_policy_flag",
+     *     description="Has the user read the privacy policy?",
+     *     example=1,
+     * )
+     *
+     * @var integer
+     */
+    public $privacy_policy_flag;
 }

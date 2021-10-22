@@ -230,6 +230,7 @@ class AuthController extends Controller
             'email' => 'required|email',
             'password' => 'required|min:5|confirmed',
             'password_confirmation' => 'required',
+            'privacy_policy_flag' => 'boolean',
         ]);
 
         $confirmation =  DB::table('password_resets')
@@ -240,7 +241,15 @@ class AuthController extends Controller
         if($confirmation){
             $user = User::with('roles')->where('email', $fields['email'])->first();
 
-            $user->forceFill(['password' => Hash::make($fields['password'])])->save();
+            $user->forceFill(['password' => Hash::make($fields['password'])]);
+
+            if(isset($fields['privacy_policy_flag'])) {
+                $user->fill([
+                    'privacy_policy_flag' => $fields['privacy_policy_flag'],
+                ]);
+            }
+
+            $user->save();
 
             DB::table('password_resets')
                 ->where('email', $fields['email'])
