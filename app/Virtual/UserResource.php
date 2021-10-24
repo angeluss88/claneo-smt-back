@@ -108,4 +108,23 @@ class UserResource
      * )
      */
     public $roles;
+
+    /**
+     * @OA\Property(
+     *     title="client",
+     *     type="object",
+     *     @OA\Schema (ref="#/components/schemas/ClientResource")
+     * )
+     */
+    public $client;
+
+    /**
+     * @OA\Property(
+     *     title="projects",
+     *     type="array",
+     *     collectionFormat="multi",
+     *     @OA\Items(ref="#/components/schemas/ProjectResource")
+     * )
+     */
+    public $projects;
 }

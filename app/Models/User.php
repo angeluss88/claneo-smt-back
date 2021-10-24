@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\DatabaseNotification;
@@ -53,6 +54,9 @@ use Laravel\Sanctum\PersonalAccessToken;
  * @property-read Collection|Role[] $roles
  * @property-read int|null $roles_count
  * @method static Builder|User wherePrivacyPolicyFlag($value)
+ * @property-read Client|null $client
+ * @property-read Collection|Project[] $domain
+ * @property-read int|null $domain_count
  */
 class User extends Authenticatable
 {
@@ -145,5 +149,13 @@ class User extends Authenticatable
     public function client(): HasOne
     {
         return $this->hasOne(Client::class);
+    }
+
+    /**
+     * @return HasMany
+     */
+    public function projects(): HasMany
+    {
+        return $this->hasMany(Project::class);
     }
 }

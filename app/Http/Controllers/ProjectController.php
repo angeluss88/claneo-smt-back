@@ -2,25 +2,25 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use App\Models\Project;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
 
-class UserController extends Controller
+class ProjectController extends Controller
 {
     /**
      * @OA\Get(
-     *     path="/users",
-     *     operationId="users_index",
-     *     tags={"Users"},
-     *     summary="List of users",
+     *     path="/projects",
+     *     operationId="projects_index",
+     *     tags={"Projects"},
+     *     summary="Projects List",
      *     @OA\Response(
      *         response="200",
      *         description="Everything is fine",
      *         @OA\JsonContent(
      *             @OA\Property(
-     *                 property="users",
+     *                 property="projects",
      *                 type="array",
      *                 collectionFormat="multi",
      *                 @OA\Items(
@@ -33,14 +33,14 @@ class UserController extends Controller
      *                          property="data",
      *                          type="array",
      *                          collectionFormat="multi",
-     *                          @OA\Items(ref="#/components/schemas/UserResource")
+     *                          @OA\Items(ref="#/components/schemas/ProjectResource")
      *                     )
      *                 ),
      *             ),
      *             @OA\Property(
      *                 property="first_page_url",
      *                 type="string",
-     *                 example="http://127.0.0.1:8000/api/users?page=1",
+     *                 example="http://127.0.0.1:8000/api/projects?page=1",
      *             ),
      *             @OA\Property(
      *                 property="from",
@@ -55,7 +55,7 @@ class UserController extends Controller
      *             @OA\Property(
      *                 property="last_page_url",
      *                 type="string",
-     *                 example="http://127.0.0.1:8000/api/users?page=4",
+     *                 example="http://127.0.0.1:8000/api/projects?page=4",
      *             ),
      *             @OA\Property(
      *                 property="links",
@@ -65,23 +65,23 @@ class UserController extends Controller
      *                     "label": "&laquo; Previous",
      *                     "active": false
      *                 }, {
-     *                     "url": "http://127.0.0.1:8000/api/users?page=1",
+     *                     "url": "http://127.0.0.1:8000/api/projects?page=1",
      *                     "label": "1",
      *                     "active": true
      *                 }, {
-     *                     "url": "http://127.0.0.1:8000/api/users?page=2",
+     *                     "url": "http://127.0.0.1:8000/api/projects?page=2",
      *                     "label": "2",
      *                     "active": false
      *                 }, {
-     *                     "url": "http://127.0.0.1:8000/api/users?page=3",
+     *                     "url": "http://127.0.0.1:8000/api/projects?page=3",
      *                     "label": "3",
      *                     "active": false
      *                 }, {
-     *                     "url": "http://127.0.0.1:8000/api/users?page=4",
+     *                     "url": "http://127.0.0.1:8000/api/projects?page=4",
      *                     "label": "4",
      *                     "active": false
      *                 }, {
-     *                     "url": "http://127.0.0.1:8000/api/users?page=2",
+     *                     "url": "http://127.0.0.1:8000/api/projects?page=2",
      *                     "label": "Next &raquo;",
      *                     "active": false
      *                 }},
@@ -106,12 +106,12 @@ class UserController extends Controller
      *             @OA\Property(
      *                 property="next_page_url",
      *                 type="string",
-     *                 example="http://127.0.0.1:8000/api/users?page=2",
+     *                 example="http://127.0.0.1:8000/api/projects?page=2",
      *             ),
      *             @OA\Property(
      *                 property="path",
      *                 type="string",
-     *                 example="http://127.0.0.1:8000/api/users",
+     *                 example="http://127.0.0.1:8000/api/projects",
      *             ),
      *             @OA\Property(
      *                 property="per_page",
@@ -147,97 +147,41 @@ class UserController extends Controller
      */
     public function index(): Response
     {
-        $users = User::with('roles', 'client', 'projects')->paginate(5);
+        $projects = Project::with('user')->paginate(5);
 
         return response([
-            'users' => $users,
+            'projects' => $projects,
         ], 200);
     }
 
     /**
-     * @OA\Get(
-     *     path="/users/{user}",
-     *     operationId="users_show",
-     *     tags={"Users"},
-     *     summary="Show User",
-     *     @OA\Response(
-     *         response="200",
-     *         description="Everything is fine",
-     *         @OA\JsonContent(
-     *             @OA\Property(
-     *             property="user",
-     *             type="object",
-     *             ref="#/components/schemas/UserResource",
-     *         )),
-     *     ),
-     *     @OA\Response(
-     *         response="401",
-     *         description="Unauthenticated",
-     *     ),
-     *     @OA\Response(
-     *         response="404",
-     *         description="Error: Not Found",
-     *     ),
-     *     @OA\Parameter(
-     *         name="user",
-     *         in="path",
-     *         description="The user id",
-     *         required=true,
-     *         @OA\Schema(
-     *             type="integer",
-     *         )
-     *     ),
-     *     security={
-     *       {"bearerAuth": {}},
-     *     },
-     * )
      *
-     * @param User $user
-     * @return Response
-     */
-    public function show(User $user): Response
-    {
-        return response([
-            'user' => User::with(['roles', 'client',  'project'])->find($user->id),
-        ], 200);
-    }
-
-    /**
-     * @OA\Put(
-     *     path="/users/{user}",
-     *     operationId="users_update",
-     *     tags={"Users"},
-     *     summary="Update User",
+     * @OA\Post (
+     *     path="/projects",
+     *     operationId="projects_store",
+     *     tags={"Projects"},
+     *     summary="Create Project",
      *     @OA\Response(
-     *         response="200",
+     *         response="201",
      *         description="Everything is fine",
      *         @OA\JsonContent(
      *             @OA\Property(
-     *             property="user",
+     *             property="project",
      *             type="object",
-     *             ref="#/components/schemas/UserResource",
-     *         )),
+     *             ref="#/components/schemas/ProjectResource",
+     *         ))
      *     ),
      *     @OA\Response(
      *         response="401",
      *         description="Unauthenticated",
      *     ),
      *     @OA\Response(
-     *         response="404",
-     *         description="Error: Not Found",
-     *     ),
-     *     @OA\Parameter(
-     *         name="user",
-     *         in="path",
-     *         description="The user id",
-     *         required=true,
-     *         @OA\Schema(
-     *             type="integer",
-     *         )
+     *         response="422",
+     *         description="The given data was invalid.",
      *     ),
      *     @OA\RequestBody(
      *         required=true,
-     *         @OA\JsonContent(ref="#/components/schemas/UserUpdateRequest")
+     *         @OA\JsonContent(ref="#/components/schemas/ProjectRequest")
      *     ),
      *     security={
      *       {"bearerAuth": {}},
@@ -245,40 +189,147 @@ class UserController extends Controller
      * )
      *
      * @param Request $request
-     * @param User $user
      * @return Response
      */
-    public function update(Request $request, User $user): Response
+    public function store(Request $request): Response
     {
         $fields = $request->validate([
-            'first_name' => 'string|max:100',
-            'last_name' => 'string|max:100',
-            'email' => [
-                'email',
-                Rule::unique('users')->ignore($user->id),
-            ],
-            'privacy_policy_flag' => 'boolean',
-            'password' => 'string',
-            'roles' => 'array',
+            'domain' => 'required|unique:projects,domain|string|max:255',
+            'user_id' => 'required|exists:users,id',
         ]);
 
-        if(isset($fields['roles']) && !empty($fields['roles'])) {
-            $user->roles()->sync($fields['roles']);
-        }
-
-        $user->fill($fields)->save();
+        $project = Project::create([
+            'domain' => $fields['domain'],
+            'user_id' => $fields['user_id'],
+        ]);
 
         return response([
-            'user' => User::with('roles', 'client', 'projects')->find($user->id),
+            'project' => $project
+        ], 201);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/projects/{project}",
+     *     operationId="projects_show",
+     *     tags={"Projects"},
+     *     summary="Show Project",
+     *     @OA\Response(
+     *         response="200",
+     *         description="Everything is fine",
+     *         @OA\JsonContent(
+     *             @OA\Property(
+     *             property="project",
+     *             type="object",
+     *             ref="#/components/schemas/ProjectResource",
+     *         )),
+     *     ),
+     *     @OA\Response(
+     *         response="401",
+     *         description="Unauthenticated",
+     *     ),
+     *     @OA\Response(
+     *         response="404",
+     *         description="Error: Not Found",
+     *     ),
+     *     @OA\Parameter(
+     *         name="project",
+     *         in="path",
+     *         description="The project id",
+     *         required=true,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     security={
+     *       {"bearerAuth": {}},
+     *     },
+     * )
+     *
+     * @param Project $project
+     * @return Response
+     */
+    public function show(Project $project): Response
+    {
+        return response([
+            'project' => $project,
+        ], 200);
+    }
+
+    /**
+     * @OA\Put(
+     *     path="/projects/{project}",
+     *     operationId="projects_update",
+     *     tags={"Projects"},
+     *     summary="Update Project",
+     *     @OA\Response(
+     *         response="200",
+     *         description="Everything is fine",
+     *         @OA\JsonContent(
+     *             @OA\Property(
+     *             property="project",
+     *             type="object",
+     *             ref="#/components/schemas/ProjectResource",
+     *         )),
+     *     ),
+     *     @OA\Response(
+     *         response="401",
+     *         description="Unauthenticated",
+     *     ),
+     *     @OA\Response(
+     *         response="404",
+     *         description="Error: Not Found",
+     *     ),
+     *     @OA\Response(
+     *         response="422",
+     *         description="The given data was invalid.",
+     *     ),
+     *     @OA\Parameter(
+     *         name="project",
+     *         in="path",
+     *         description="The project id",
+     *         required=true,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(ref="#/components/schemas/ProjectRequest")
+     *     ),
+     *     security={
+     *       {"bearerAuth": {}},
+     *     },
+     * )
+     *
+     * @param Request $request
+     * @param Project $project
+     * @return Response
+     */
+    public function update(Request $request, Project $project): Response
+    {
+        $fields = $request->validate([
+            'domain' => [
+                'string',
+                'max:255',
+                Rule::unique('projects')->ignore($project->id),
+            ],
+            'user_id' => 'required|exists:users,id',
+        ]);
+
+        $project->fill($fields)->save();
+
+        return response([
+            'project' => $project,
         ], 200);
     }
 
     /**
      * @OA\Delete (
-     *     path="/users/{user}",
-     *     operationId="users_delete",
-     *     tags={"Users"},
-     *     summary="Delete User",
+     *     path="/projects/{project}",
+     *     operationId="projects_delete",
+     *     tags={"Projects"},
+     *     summary="Delete Project",
      *     @OA\Response(
      *         response="204",
      *         description="Everything is fine",
@@ -292,9 +343,9 @@ class UserController extends Controller
      *         description="Error: Not Found",
      *     ),
      *     @OA\Parameter(
-     *         name="user",
+     *         name="project",
      *         in="path",
-     *         description="The user id",
+     *         description="The project id",
      *         required=true,
      *         @OA\Schema(
      *             type="integer",
@@ -305,12 +356,12 @@ class UserController extends Controller
      *     },
      * )
      *
-     * @param User $user
+     * @param Project $project
      * @return Response
      */
-    public function destroy(User $user): Response
+    public function destroy(Project $project): Response
     {
-        $user->delete();
+        $project->delete();
 
         return response([], 204);
     }
