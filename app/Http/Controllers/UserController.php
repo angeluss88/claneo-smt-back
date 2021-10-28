@@ -198,7 +198,7 @@ class UserController extends Controller
     public function show(User $user): Response
     {
         return response([
-            'user' => User::with(['roles', 'client',  'project'])->find($user->id),
+            'user' => User::with(['roles', 'client',  'projects'])->find($user->id),
         ], 200);
     }
 
