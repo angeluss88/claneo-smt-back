@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\ImportStrategyController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
@@ -41,6 +42,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::resource('roles', RoleController::class);
     Route::resource('clients', ClientController::class);
     Route::resource('projects', ProjectController::class);
+
+    Route::post('/import_strategy', [ImportStrategyController::class, 'import'])->middleware('role:admin,SEO,Researcher');
 });
 
 

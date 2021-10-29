@@ -16,6 +16,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static Builder|Project query()
  * @mixin Eloquent
  * @property-read User $user
+ * @property int $id
+ * @property string $domain
+ * @property int|null $user_id
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @method static Builder|Project whereCreatedAt($value)
+ * @method static Builder|Project whereDomain($value)
+ * @method static Builder|Project whereId($value)
+ * @method static Builder|Project whereUpdatedAt($value)
+ * @method static Builder|Project whereUserId($value)
  */
 class Project extends Model
 {
