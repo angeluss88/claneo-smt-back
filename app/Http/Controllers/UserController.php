@@ -226,6 +226,10 @@ class UserController extends Controller
      *         response="404",
      *         description="Error: Not Found",
      *     ),
+     *     @OA\Response(
+     *         response="422",
+     *         description="The given data was invalid",
+     *     ),
      *     @OA\Parameter(
      *         name="user",
      *         in="path",

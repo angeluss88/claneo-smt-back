@@ -174,6 +174,10 @@ class ClientController extends Controller
      *         response="401",
      *         description="Unauthenticated",
      *     ),
+     *     @OA\Response(
+     *         response="422",
+     *         description="The given data was invalid",
+     *     ),
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(ref="#/components/schemas/ClientRequest")
@@ -271,6 +275,10 @@ class ClientController extends Controller
      *     @OA\Response(
      *         response="404",
      *         description="Error: Not Found",
+     *     ),
+     *     @OA\Response(
+     *         response="422",
+     *         description="The given data was invalid",
      *     ),
      *     @OA\Parameter(
      *         name="client",
