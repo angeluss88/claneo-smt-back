@@ -6,13 +6,27 @@ use App\Models\Import;
 use App\Models\Keyword;
 use App\Models\Project;
 use App\Models\URL;
+use App\Services\GoogleAnalyticsService;
 use Auth;
+use DateTime;
+use Google\Analytics\Data\V1beta\BetaAnalyticsDataClient;
+use Google\Analytics\Data\V1beta\DateRange;
+use Google\ApiCore\ApiException;
+use Google\ApiCore\ValidationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
+use Google\Analytics\Data\V1beta\Dimension;
+use Google\Analytics\Data\V1beta\Metric;
 
 class ImportStrategyController extends Controller
 {
+    public $ga;
+
+    public function __construct (GoogleAnalyticsService $ga)
+    {
+        $this->ga = $ga;
+    }
+
     /**
      *
      * @OA\Post (
@@ -342,4 +356,53 @@ class ImportStrategyController extends Controller
         return $csv;
     }
 
+    /**
+     * @OA\Get(
+     *      path="/expandGA",
+     *      operationId="expandGA",
+     *      tags={"Content Strategy"},
+     *      summary="Expand GA Data (test mode, in progress...)",
+     *      description="Returns expanded GA data",
+     *      @OA\Response(
+     *          response=200,
+     *          description="Successful operation",
+     *       ),
+     *      @OA\Response(
+     *          response=401,
+     *          description="Unauthenticated",
+     *      ),
+     *      security={
+     *       {"bearerAuth": {}},
+     *     },
+     *     )
+     * @throws ValidationException|ApiException
+     */
+    public function expandGA()
+    {
+        $propertyName = 'https://www.auftragsbank.de/'; // == $project->domain; with http(s)
+
+        $property = $this->ga->getPropertyByName($propertyName);
+        if(!$property) {
+            $property = $this->ga->insertProperty($propertyName);
+            $this->ga->insertView ($property->getId(), 'eCommerce View');
+        }
+
+        // prepare data for a call
+        $datetime = new DateTime();
+        $datetime = $datetime->modify('-16 months')->format('Y-m-d');
+        $dimensions = ['city'];
+        $metrics = ['activeUsers'];
+
+        // Make an API call.
+        $response = $this->ga->makeGAApiCall ($property, $dimensions, $metrics, $datetime);
+
+        $result = [];
+        foreach ($response->getRows() as $row) {
+            $result[] = $row->getDimensionValues()[0]->getValue() . ' ' . $row->getMetricValues()[0]->getValue() . PHP_EOL;
+        }
+
+        return response([
+            'result' => $result,
+        ], 200);
+    }
 }

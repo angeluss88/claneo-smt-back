@@ -9,11 +9,13 @@
         "darkaonline/l5-swagger": "^8.0",
         "doctrine/dbal": "^3.1",
         "fruitcake/laravel-cors": "^2.0",
+        "google/analytics-data": "^0.7.1",
+        "google/apiclient": "^2.0",
+        "google/cloud": "^0.171.1",
         "guzzlehttp/guzzle": "^7.0.1",
         "laravel/framework": "^8.54",
         "laravel/sanctum": "^2.11",
-        "laravel/tinker": "^2.5",
-        "ext-http": "*"
+        "laravel/tinker": "^2.5"
     },
     "require-dev": {
         "barryvdh/laravel-ide-helper": "^2.10",

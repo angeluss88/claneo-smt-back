@@ -44,6 +44,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::resource('projects', ProjectController::class);
 
     Route::post('/import_strategy', [ImportStrategyController::class, 'import'])->middleware('role:admin,SEO,Researcher');
+    Route::get('/expandGA/', [ImportStrategyController::class, 'expandGA'])->middleware('role:admin,SEO,Researcher');
 });
 
 
