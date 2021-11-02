@@ -61,10 +61,14 @@ class AccountController extends Controller
             $user->password = Hash::make($fields['password']);
         }
 
+        if(isset($fields['roles']) && !empty($fields['roles'])) {
+            $user->roles()->sync($fields['roles']);
+        }
+
         $user->fill($fields)->save();
 
         return response([
-            'user' => $user,
+            'user' => User::with(['roles', 'client', 'projects',])->find(auth()->user()->id),
         ], 200);
     }
 
