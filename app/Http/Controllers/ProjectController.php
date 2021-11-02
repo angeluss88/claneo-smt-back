@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Client;
 use App\Models\Project;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -195,16 +196,17 @@ class ProjectController extends Controller
     {
         $fields = $request->validate([
             'domain' => 'required|unique:projects,domain|string|max:255',
-            'user_id' => 'required|exists:users,id',
+            'user_id' => 'required_without:client|exists:users,id',
+            'client' => 'required_without:user_id|exists:clients,name',
         ]);
 
         $project = Project::create([
             'domain' => $fields['domain'],
-            'user_id' => $fields['user_id'],
+            'user_id' => $fields['user_id'] ?? Client::with('user')->where('name', $fields['client'])->first()->user->id,
         ]);
 
         return response([
-            'project' => $project
+            'project' => $project,
         ], 201);
     }
 
@@ -314,10 +316,14 @@ class ProjectController extends Controller
                 'max:255',
                 Rule::unique('projects')->ignore($project->id),
             ],
-            'user_id' => 'required|exists:users,id',
+            'user_id' => 'exists:users,id',
+            'client' => 'exists:clients,name',
         ]);
 
-        $project->fill($fields)->save();
+        $project->fill([
+            'domain' =>  $fields['domain'],
+            'user_id' => $fields['user_id'] ?? Client::with('user')->where('name', $fields['client'])->first()->user->id,
+        ])->save();
 
         return response([
             'project' => $project,

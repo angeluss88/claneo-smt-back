@@ -24,12 +24,12 @@ class ProjectRequest
 
     /**
      * @OA\Property(
-     *     title="user_id",
-     *     description="ID or user to assign",
-     *     example="1",
+     *     title="client",
+     *     description="CLient name to assign",
+     *     example="Company",
      * )
      *
      * @var string
      */
-    public $user_id;
+    public $client;
 }
