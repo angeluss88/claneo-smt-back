@@ -2,19 +2,23 @@
 
 namespace App\Models;
 
+use Eloquent;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * App\Models\URL
  *
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Keyword[] $keywords
+ * @property-read Collection|Keyword[] $keywords
  * @property-read int|null $keywords_count
- * @method static \Illuminate\Database\Eloquent\Builder|URL newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|URL newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|URL query()
- * @mixin \Eloquent
+ * @method static Builder|URL newModelQuery()
+ * @method static Builder|URL newQuery()
+ * @method static Builder|URL query()
+ * @mixin Eloquent
  */
 class URL extends Model
 {
@@ -42,13 +46,37 @@ class URL extends Model
 
     protected $table = 'urls';
 
+    public $fillable = [
+        'url',
+        'project_id',
+        'status',
+        'main_category',
+        'sub_category',
+        'sub_category2',
+        'sub_category3',
+        'sub_category4',
+        'sub_category5',
+        'ecom_conversion_rate',
+        'revenue',
+        'avg_order_value',
+        'bounce_rate',
+    ];
+
     /**
      * @return BelongsToMany
      */
     public function keywords(): BelongsToMany
     {
         return $this->belongsToMany(Keyword::class, 'url_keyword', 'url_id')
-            ->withPivot('current_ranking_position', 'clicks', 'impressions', 'ctr');
+            ->withPivot('clicks', 'impressions', 'ctr');
+    }
+
+    /**
+     * @return BelongsTo
+     */
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
     }
 
 }

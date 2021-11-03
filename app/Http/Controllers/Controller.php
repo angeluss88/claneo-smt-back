@@ -52,6 +52,10 @@ class Controller extends BaseController
      *     name="Projects",
      *     description="API Endpoints of Projects"
      * )
+     * @OA\Tag(
+     *     name="URLs",
+     *     description="API Endpoints of URLs"
+     * )
      *
      * @OA\SecurityScheme(
      *     type="http",

@@ -48,7 +48,7 @@ class RegisterRequest
      * @OA\Property(
      *     title="roles",
      *     description="Roles of user",
-     *     example={5, 6},
+     *     example={1, 2},
      * )
      *
      * @var string

@@ -3,10 +3,11 @@
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ImportStrategyController;
+use App\Http\Controllers\KeywordController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\UrlController;
 use App\Http\Controllers\UserController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 
@@ -14,11 +15,6 @@ use App\Http\Controllers\AuthController;
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| is assigned the "api" middleware group. Enjoy building your API!
-|
 */
 
 //Public routes
@@ -42,6 +38,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::resource('roles', RoleController::class);
     Route::resource('clients', ClientController::class);
     Route::resource('projects', ProjectController::class);
+    Route::resource('urls', UrlController::class);
+    Route::resource('keywords', KeywordController::class);
 
     Route::post('/import_strategy', [ImportStrategyController::class, 'import'])->middleware('role:admin,SEO,Researcher');
     Route::get('/expandGA/', [ImportStrategyController::class, 'expandGA'])->middleware('role:admin,SEO,Researcher');

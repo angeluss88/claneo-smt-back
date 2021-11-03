@@ -9,14 +9,10 @@ use App\Models\URL;
 use App\Services\GoogleAnalyticsService;
 use Auth;
 use DateTime;
-use Google\Analytics\Data\V1beta\BetaAnalyticsDataClient;
-use Google\Analytics\Data\V1beta\DateRange;
 use Google\ApiCore\ApiException;
 use Google\ApiCore\ValidationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Google\Analytics\Data\V1beta\Dimension;
-use Google\Analytics\Data\V1beta\Metric;
 
 class ImportStrategyController extends Controller
 {
@@ -192,13 +188,13 @@ class ImportStrategyController extends Controller
             $url['status'] = $row[$headers[$keys['status']]];
             $url['status'] = str_replace('NEU', 'NEW', $url['status']);
             $url['main_category'] = $row[$headers[$keys['main_category']]];
+            $url['project_id'] = $project->id;
             $url['page_type'] = isset($headers[$keys['page_type']]) ? $row[$headers[$keys['page_type']]] : null;
             $url['sub_category'] = isset($headers[$keys['sub_category_1']]) ? $row[$headers[$keys['sub_category_1']]] : null;
             $url['sub_category2'] = isset($headers[$keys['sub_category_2']]) ? $row[$headers[$keys['sub_category_2']]] : null;
             $url['sub_category3'] = isset($headers[$keys['sub_category_3']]) ? $row[$headers[$keys['sub_category_3']]] : null;
             $url['sub_category4'] = isset($headers[$keys['sub_category_4']]) ? $row[$headers[$keys['sub_category_4']]] : null;
             $url['sub_category5'] = isset($headers[$keys['sub_category_5']]) ? $row[$headers[$keys['sub_category_5']]] : null;
-//            $url['keywords'][] = $keyword; // and anyway we should add keyword to this URL
 
             // add url item to $urls by url key (the same urls will be the same item)
             $urls[$row[$headers[$keys['url']]]] = $url;
@@ -219,6 +215,10 @@ class ImportStrategyController extends Controller
             'user_id' => Auth::id(),
             'project_id' => $project->id,
         ]);
+
+        foreach ($urls as $value) {
+            $value['import_id'] = $import->id;
+        }
 
         // save all prepared urls from $urls
         URL::upsert(array_values($urls), ['url']);
