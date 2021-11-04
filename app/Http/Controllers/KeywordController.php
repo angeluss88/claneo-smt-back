@@ -2,83 +2,450 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Keyword;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Validation\Rule;
 
 class KeywordController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * @OA\Get(
+     *     path="/keywords?page={page}&count={count}",
+     *     operationId="keywords_index",
+     *     tags={"Keywords"},
+     *     summary="List of keywords",
+     *     @OA\Response(
+     *         response="200",
+     *         description="Everything is fine",
+     *         @OA\JsonContent(
+     *             @OA\Property(
+     *                 property="keywords",
+     *                 type="array",
+     *                 collectionFormat="multi",
+     *                 @OA\Items(
+     *                     @OA\Property(
+     *                          property="current_page",
+     *                          type="integer",
+     *                          example=1,
+     *                     ),
+     *                     @OA\Property(
+     *                          property="data",
+     *                          type="array",
+     *                          collectionFormat="multi",
+     *                          @OA\Items(ref="#/components/schemas/KeywordResource")
+     *                     )
+     *                 ),
+     *             ),
+     *             @OA\Property(
+     *                 property="first_page_url",
+     *                 type="string",
+     *                 example="http://127.0.0.1:8000/api/keywords?page=1",
+     *             ),
+     *             @OA\Property(
+     *                 property="from",
+     *                 type="integer",
+     *                 example=1,
+     *             ),
+     *             @OA\Property(
+     *                 property="last_page",
+     *                 type="integer",
+     *                 example=4,
+     *             ),
+     *             @OA\Property(
+     *                 property="last_page_url",
+     *                 type="string",
+     *                 example="http://127.0.0.1:8000/api/keywords?page=4",
+     *             ),
+     *             @OA\Property(
+     *                 property="links",
+     *                 type="array",
+     *                 example={{
+     *                     "url": null,
+     *                     "label": "&laquo; Previous",
+     *                     "active": false
+     *                 }, {
+     *                     "url": "http://127.0.0.1:8000/api/keywords?page=1",
+     *                     "label": "1",
+     *                     "active": true
+     *                 }, {
+     *                     "url": "http://127.0.0.1:8000/api/keywords?page=2",
+     *                     "label": "2",
+     *                     "active": false
+     *                 }, {
+     *                     "url": "http://127.0.0.1:8000/api/keywords?page=3",
+     *                     "label": "3",
+     *                     "active": false
+     *                 }, {
+     *                     "url": "http://127.0.0.1:8000/api/keywords?page=4",
+     *                     "label": "4",
+     *                     "active": false
+     *                 }, {
+     *                     "url": "http://127.0.0.1:8000/api/keywords?page=2",
+     *                     "label": "Next &raquo;",
+     *                     "active": false
+     *                 }},
+     *                 @OA\Items(
+     *                     @OA\Property(
+     *                         property="url",
+     *                         type="string",
+     *                         example=""
+     *                      ),
+     *                      @OA\Property(
+     *                         property="label",
+     *                         type="string",
+     *                         example=""
+     *                      ),
+     *                      @OA\Property(
+     *                         property="active",
+     *                         type="boolean",
+     *                         example=""
+     *                      ),
+     *                 )
+     *             ),
+     *             @OA\Property(
+     *                 property="next_page_url",
+     *                 type="string",
+     *                 example="http://127.0.0.1:8000/api/keywords?page=2",
+     *             ),
+     *             @OA\Property(
+     *                 property="path",
+     *                 type="string",
+     *                 example="http://127.0.0.1:8000/api/keywords",
+     *             ),
+     *             @OA\Property(
+     *                 property="per_page",
+     *                 type="integer",
+     *                 example=1,
+     *             ),
+     *             @OA\Property(
+     *                 property="prev_page_url",
+     *                 type="string",
+     *                 example=null,
+     *             ),
+     *             @OA\Property(
+     *                 property="to",
+     *                 type="integer",
+     *                 example=1,
+     *             ),
+     *             @OA\Property(
+     *                 property="total",
+     *                 type="integer",
+     *                 example=4,
+     *         )),
+     *     ),
+     *     @OA\Response(
+     *         response="401",
+     *         description="Unauthenticated",
+     *     ),
+     *     @OA\Parameter(
+     *         name="page",
+     *         in="path",
+     *         description="The page",
+     *         required=false,
+     *         example=1,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="count",
+     *         in="path",
+     *         description="Count of rows",
+     *         required=false,
+     *         example=10,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     security={
+     *       {"bearerAuth": {}},
+     *     },
+     * )
      *
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @return Response
      */
-    public function index()
+    public function index(Request $request): Response
     {
-        //
+        $count = $request->count == '{count}' ? 10 : $request->count;
+        return response([
+            'keywords' => Keyword::with(['urls'])->paginate($count),
+        ], 200);
     }
 
     /**
-     * Show the form for creating a new resource.
+     * @OA\Post (
+     *     path="/keywords",
+     *     operationId="keywords_store",
+     *     tags={"Keywords"},
+     *     summary="Create Keyword",
+     *     @OA\Response(
+     *         response="201",
+     *         description="Everything is fine",
+     *         @OA\JsonContent(
+     *             @OA\Property(
+     *             property="Keyword",
+     *             type="object",
+     *             ref="#/components/schemas/KeywordResource",
+     *         ))
+     *     ),
+     *     @OA\Response(
+     *         response="401",
+     *         description="Unauthenticated",
+     *     ),
+     *     @OA\Response(
+     *         response="422",
+     *         description="The given data was invalid",
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(ref="#/components/schemas/KeywordRequest")
+     *     ),
+     *     security={
+     *       {"bearerAuth": {}},
+     *     },
+     * ).
      *
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @return Response
      */
-    public function create()
+    public function store(Request $request): Response
     {
-        //
+        $fields = $request->validate([
+            'keyword'                   => 'required|unique:keywords,keyword|string|max:255',
+            'search_volume'             => 'required|integer',
+            'search_volume_clustered'   => 'integer',
+            'current_ranking_url'       => 'max:255',
+            'featured_snippet_keyword'  => [
+                Rule::in(['ja', 'nein', 'yes', 'no', 'Ja', 'Nein', 'Yes', 'No']),
+            ],
+            'featured_snippet_owned'  => [
+                Rule::in(['ja', 'nein', 'yes', 'no', 'Ja', 'Nein', 'Yes', 'No']),
+            ],
+            'current_ranking_position'  => [
+                'required',
+                Rule::in(array_merge(range(1, 100),
+                   [ 'Nicht in Top 100', 'nicht in Top 100', 'Not in Top 100', 'not in Top 100'])),
+            ],
+            'search_intention'  => [
+                Rule::in(['informational', 'Informational', 'transaktional', 'Transaktional', 'transactional',
+                    'Informational/transaktional', 'informational/transaktional', 'informational/transactional', 'Informational/transactional',
+                    'navigational', 'Navigational']),
+            ],
+        ]);
+
+        unset($fields['import_id']);
+
+        $fields = $this->replaceFields($fields);
+
+        $keyword = Keyword::create($fields);
+
+        return response([
+            'keyword' => $keyword,
+        ], 201);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * @OA\Get(
+     *     path="/keywords/{keyword}",
+     *     operationId="keywords_show",
+     *     tags={"Keywords"},
+     *     summary="Show Keyword",
+     *     @OA\Response(
+     *         response="200",
+     *         description="Everything is fine",
+     *         @OA\JsonContent(
+     *             @OA\Property(
+     *             property="keyword",
+     *             type="object",
+     *             ref="#/components/schemas/KeywordResource",
+     *         )),
+     *     ),
+     *     @OA\Response(
+     *         response="401",
+     *         description="Unauthenticated",
+     *     ),
+     *     @OA\Response(
+     *         response="404",
+     *         description="Error: Not Found",
+     *     ),
+     *     @OA\Parameter(
+     *         name="keyword",
+     *         in="path",
+     *         description="The keyword id",
+     *         required=true,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     security={
+     *       {"bearerAuth": {}},
+     *     },
+     * )
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @param  Keyword  $keyword
+     * @return Response
      */
-    public function store(Request $request)
+    public function show(Keyword $keyword): Response
     {
-        //
+        return response([
+            'keyword' => Keyword::with(['urls'])->find($keyword->id),
+        ], 200);
     }
 
     /**
-     * Display the specified resource.
+     * @OA\Put(
+     *     path="/keywords/{keyword}",
+     *     operationId="keywords_update",
+     *     tags={"Keywords"},
+     *     summary="Update Keyword",
+     *     @OA\Response(
+     *         response="200",
+     *         description="Everything is fine",
+     *         @OA\JsonContent(
+     *             @OA\Property(
+     *             property="keyword",
+     *             type="object",
+     *             ref="#/components/schemas/KeywordResource",
+     *         )),
+     *     ),
+     *     @OA\Response(
+     *         response="401",
+     *         description="Unauthenticated",
+     *     ),
+     *     @OA\Response(
+     *         response="404",
+     *         description="Error: Not Found",
+     *     ),
+     *     @OA\Response(
+     *         response="422",
+     *         description="The given data was invalid",
+     *     ),
+     *     @OA\Parameter(
+     *         name="keyword",
+     *         in="path",
+     *         description="The keyword id",
+     *         required=true,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(ref="#/components/schemas/KeywordRequest")
+     *     ),
+     *     security={
+     *       {"bearerAuth": {}},
+     *     },
+     * )
      *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @param  Keyword $keyword
+     * @return Response
      */
-    public function show($id)
+    public function update(Request $request, Keyword $keyword): Response
     {
-        //
+        $fields = $request->validate([
+            'keyword' => [
+                'string',
+                'max:255',
+                Rule::unique('keywords')->ignore($keyword->id),
+            ],
+            'search_volume' => 'integer',
+            'search_volume_clustered' => 'integer',
+            'current_ranking_url' => 'max:255',
+            'featured_snippet_keyword' => [
+                Rule::in(['ja', 'nein', 'yes', 'no', 'Ja', 'Nein', 'Yes', 'No']),
+            ],
+            'featured_snippet_owned' => [
+                Rule::in(['ja', 'nein', 'yes', 'no', 'Ja', 'Nein', 'Yes', 'No']),
+            ],
+            'current_ranking_position' => [
+                Rule::in(array_merge(range(1, 100), [ 'Nicht in Top 100', 'nicht in Top 100', 'Not in Top 100', 'not in Top 100'])),
+            ],
+            'search_intention' => [
+                Rule::in(['informational', 'Informational', 'transaktional', 'Transaktional', 'transactional',
+                    'Informational/transaktional', 'informational/transaktional', 'informational/transactional', 'Informational/transactional',
+                    'navigational', 'Navigational']),
+            ],
+        ]);
+
+        unset($fields['import_id']);
+
+        $fields = $this->replaceFields($fields);
+
+        $keyword->fill($fields)->save();
+
+        return response([
+            'keyword' => $keyword,
+        ], 200);
+    }
+
+    protected function replaceFields ($fields)
+    {
+        if ( isset($fields['featured_snippet_keyword']) ) {
+            $fields['featured_snippet_keyword'] = strtolower($fields['featured_snippet_keyword']);
+            $fields['featured_snippet_keyword'] = str_replace('ja', 'yes', $fields['featured_snippet_keyword']);
+            $fields['featured_snippet_keyword'] = str_replace('nein', 'no', $fields['featured_snippet_keyword']);
+        }
+
+        if ( isset($fields['featured_snippet_owned']) ) {
+            $fields['featured_snippet_owned'] = strtolower($fields['featured_snippet_owned']);
+            $fields['featured_snippet_owned'] = str_replace('ja', 'yes', $fields['featured_snippet_owned']);
+            $fields['featured_snippet_owned'] = str_replace('nein', 'no', $fields['featured_snippet_owned']);
+        }
+
+        $fields['current_ranking_position'] = str_replace('Nicht', 'Not', $fields['current_ranking_position']);
+        $fields['current_ranking_position'] = str_replace('nicht', 'Not', $fields['current_ranking_position']);
+
+        if ( isset($fields['search_intention']) ) {
+            $fields['search_intention'] = strtolower($fields['search_intention']);
+            $fields['search_intention'] = str_replace('transaktional', 'transactional', $fields['search_intention']);
+        }
+
+        return $fields;
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * @OA\Delete (
+     *     path="/keywords/{keyword}",
+     *     operationId="keywords_delete",
+     *     tags={"Keywords"},
+     *     summary="Delete Keyword",
+     *     @OA\Response(
+     *         response="204",
+     *         description="Everything is fine",
+     *     ),
+     *     @OA\Response(
+     *         response="401",
+     *         description="Unauthenticated",
+     *     ),
+     *     @OA\Response(
+     *         response="404",
+     *         description="Error: Not Found",
+     *     ),
+     *     @OA\Parameter(
+     *         name="keyword",
+     *         in="path",
+     *         description="The keyword id",
+     *         required=true,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     security={
+     *       {"bearerAuth": {}},
+     *     },
+     * )
      *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @param  Keyword $keyword
+     * @return Response
      */
-    public function edit($id)
+    public function destroy(Keyword $keyword): Response
     {
-        //
-    }
+        $keyword->delete();
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
-    {
-        //
+        return response([], 204);
     }
 }

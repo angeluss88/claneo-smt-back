@@ -165,18 +165,22 @@ class ImportStrategyController extends Controller
             $keyword['current_ranking_url'] = $headers[$keys['current_ranking_url']] ? $row[$headers[$keys['current_ranking_url']]] : null;
 
             $keyword['featured_snippet_keyword'] = isset($headers[$keys['featured_snippet_kw']]) ? $row[$headers[$keys['featured_snippet_kw']]] : null;
+            $keyword['featured_snippet_keyword'] = strtolower($keyword['featured_snippet_keyword']);
             $keyword['featured_snippet_keyword'] = str_replace('ja', 'yes', $keyword['featured_snippet_keyword']);
             $keyword['featured_snippet_keyword'] = str_replace('nein', 'no', $keyword['featured_snippet_keyword']);
 
             $keyword['featured_snippet_owned'] = isset($headers[$keys['featured_snippet_owned']]) ? $row[$headers[$keys['featured_snippet_owned']]] : null;
+            $keyword['featured_snippet_owned'] = strtolower($keyword['featured_snippet_owned']);
             $keyword['featured_snippet_owned'] = str_replace('ja', 'yes', $keyword['featured_snippet_owned']);
             $keyword['featured_snippet_owned'] = str_replace('nein', 'no', $keyword['featured_snippet_owned']);
 
             $keyword['current_ranking_position'] = $row[$headers[$keys[$current_ranking_position_key]]];
             $keyword['current_ranking_position'] = str_replace('Nicht', 'Not', $keyword['current_ranking_position']);
+            $keyword['current_ranking_position'] = str_replace('nicht', 'Not', $keyword['current_ranking_position']);
 
             $keyword['search_intention'] = isset($headers[$keys['search_intention']]) ? $row[$headers[$keys['search_intention']]] : null;
             if($keyword['search_intention']) {
+                $keyword['search_intention'] = strtolower($keyword['search_intention']);
                 $keyword['search_intention'] = str_replace('transaktional', 'transactional', $keyword['search_intention']);
             }
 
@@ -217,6 +221,10 @@ class ImportStrategyController extends Controller
         ]);
 
         foreach ($urls as $value) {
+            $value['import_id'] = $import->id;
+        }
+
+        foreach ($keywords as $value) {
             $value['import_id'] = $import->id;
         }
 

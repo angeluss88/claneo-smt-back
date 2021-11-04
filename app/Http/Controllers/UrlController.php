@@ -192,7 +192,7 @@ class UrlController extends Controller
     public function store(Request $request): Response
     {
         $fields = $request->validate([
-            'url'                   => 'required|unique:urls,url|string|max:100',
+            'url'                   => 'required|unique:urls,url|string|max:255',
             'project_id'            => 'integer',
             'status' => [
                 'required',

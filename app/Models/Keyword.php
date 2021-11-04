@@ -2,9 +2,13 @@
 
 namespace App\Models;
 
+use Eloquent;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Carbon;
 
 /**
  * App\Models\Keyword
@@ -16,27 +20,27 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property string|null $current_ranking_url
  * @property int|null $featured_snippet_keyword
  * @property int|null $featured_snippet_owned
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property string $search_intention
  * @property int|null $import_id
- * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\URL[] $urls
+ * @property-read Collection|URL[] $urls
  * @property-read int|null $urls_count
- * @method static \Illuminate\Database\Eloquent\Builder|Keyword newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|Keyword newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|Keyword query()
- * @method static \Illuminate\Database\Eloquent\Builder|Keyword whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Keyword whereCurrentRankingUrl($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Keyword whereFeaturedSnippetKeyword($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Keyword whereFeaturedSnippetOwned($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Keyword whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Keyword whereImportId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Keyword whereKeyword($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Keyword whereSearchIntention($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Keyword whereSearchVolume($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Keyword whereSearchVolumeClustered($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Keyword whereUpdatedAt($value)
- * @mixin \Eloquent
+ * @method static Builder|Keyword newModelQuery()
+ * @method static Builder|Keyword newQuery()
+ * @method static Builder|Keyword query()
+ * @method static Builder|Keyword whereCreatedAt($value)
+ * @method static Builder|Keyword whereCurrentRankingUrl($value)
+ * @method static Builder|Keyword whereFeaturedSnippetKeyword($value)
+ * @method static Builder|Keyword whereFeaturedSnippetOwned($value)
+ * @method static Builder|Keyword whereId($value)
+ * @method static Builder|Keyword whereImportId($value)
+ * @method static Builder|Keyword whereKeyword($value)
+ * @method static Builder|Keyword whereSearchIntention($value)
+ * @method static Builder|Keyword whereSearchVolume($value)
+ * @method static Builder|Keyword whereSearchVolumeClustered($value)
+ * @method static Builder|Keyword whereUpdatedAt($value)
+ * @mixin Eloquent
  */
 class Keyword extends Model
 {
@@ -61,13 +65,25 @@ class Keyword extends Model
     const CURRENT_RANKING_POSITION_EN = 'Current ranking position';
     const SEARCH_INTENTION_EN = 'Search intention';
 
+    public $fillable = [
+        'keyword',
+        'search_volume',
+        'search_volume_clustered',
+        'current_ranking_url',
+        'featured_snippet_keyword',
+        'featured_snippet_owned',
+        'search_intention',
+        'import_id',
+        'current_ranking_position',
+    ];
+
     /**
      * @return BelongsToMany
      */
     public function urls(): BelongsToMany
     {
-        return $this->belongsToMany(URL::class, 'url_keyword', 'url_id', 'keyword_id')
-            ->withPivot('current_ranking_position', 'clicks', 'impressions', 'ctr');
+        return $this->belongsToMany(URL::class, 'url_keyword', 'keyword_id', 'url_id')
+            ->withPivot('clicks', 'impressions', 'ctr');
     }
 
 }

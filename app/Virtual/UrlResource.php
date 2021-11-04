@@ -204,7 +204,7 @@ class UrlResource
      *     title="keywords",
      *     type="array",
      *     collectionFormat="multi",
-     *     @OA\Items(ref="#/components/schemas/ClientResource")
+     *     @OA\Items(ref="#/components/schemas/KeywordResource")
      * )
      */
     public $keywords;
