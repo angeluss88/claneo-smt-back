@@ -142,4 +142,55 @@ class UrlRequest
      * @var string
      */
     public $bounce_rate;
+
+    /**
+     * @OA\Property(
+     *     title="page_type",
+     *     description="page_type",
+     *     example="page_type",
+     * )
+     *
+     * @var string
+     */
+    public $page_type;
+
+    /**
+     *     @OA\Property(
+     *         type="array",
+     *         example={{
+     *            "id": 1,
+     *            "clicks": "1111",
+     *            "impressions": "1111",
+     *            "ctr": "8011118",
+     *         }, {
+     *            "id": 2,
+     *            "clicks": "2222",
+     *            "impressions": "2222",
+     *             "ctr": "232323"
+     *         }},
+     *         @OA\Items(
+     *             @OA\Property(
+     *                 property="id",
+     *                 type="integer",
+     *                 example=1
+     *             ),
+     *             @OA\Property(
+     *                 property="clicks",
+     *                 type="string",
+     *                 example=""
+     *             ),
+     *             @OA\Property(
+     *                 property="impressions",
+     *                 type="string",
+     *                 example=""
+     *             ),
+     *             @OA\Property(
+     *                 property="ctr",
+     *                 type="string",
+     *                 example=""
+     *             ),
+     *         ),
+     *     ),
+     */
+    public $keywords;
 }

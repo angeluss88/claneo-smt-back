@@ -208,6 +208,7 @@ class UrlController extends Controller
             'revenue'               => 'string|max:255',
             'avg_order_value'       => 'string|max:255',
             'bounce_rate'           => 'string|max:255',
+            'page_type'             => 'string|max:255',
         ]);
 
         if(in_array($fields['status'], ['new', 'NEU', 'neu'])) {
@@ -341,17 +342,47 @@ class UrlController extends Controller
             'revenue'               => 'string|max:255',
             'avg_order_value'       => 'string|max:255',
             'bounce_rate'           => 'string|max:255',
+            'page_type'             => 'string|max:255',
             'keywords'              => 'array',
         ]);
 
-        if(in_array($fields['status'], ['new', 'NEU', 'neu'])) {
+        if(isset($fields['status']) && in_array($fields['status'], ['new', 'NEU', 'neu'])) {
             $fields['status'] = 'NEW';
         }
 
         $url->fill($fields)->save();
 
+        if(isset($fields['keywords'])) {
+            $pivot = [];
+            foreach ($fields['keywords'] as $value) {
+                if(!isset($value['id'])) {
+                    return response([
+                        'message' => 'Keywords array should contain keyword_id',
+                    ], 422);
+                }
+                $v = $value['id'];
+                unset($value['id']);
+                $pivot[$v] = $value;
+            }
+
+            foreach ($pivot as $k_id => $data) {
+                $attributes = [];
+                if(isset($data['clicks'])){
+                    $attributes['clicks'] = $data['clicks'];
+                }
+                if(isset($data['impressions'])){
+                    $attributes['impressions'] = $data['impressions'];
+                }
+                if(isset($data['ctr'])){
+                    $attributes['ctr'] = $data['ctr'];
+                }
+
+                $url->keywords()->updateExistingPivot($k_id, $attributes);
+            }
+        }
+
         return response([
-            'url' => $url,
+            'url' => URL::with('keywords')->find($url->id),
         ], 200);
     }
 

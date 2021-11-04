@@ -60,6 +60,7 @@ class URL extends Model
         'revenue',
         'avg_order_value',
         'bounce_rate',
+        'page_type',
     ];
 
     /**
