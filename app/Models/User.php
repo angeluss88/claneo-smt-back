@@ -160,4 +160,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(Project::class);
     }
+
+    /**
+     * @return HasMany
+     */
+    public function events(): HasMany
+    {
+        return $this->hasMany(Event::class);
+    }
 }

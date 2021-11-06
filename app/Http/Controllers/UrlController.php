@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Event;
 use App\Models\Keyword;
 use App\Models\URL;
+use Auth;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
@@ -149,7 +151,7 @@ class UrlController extends Controller
     public function index(): Response
     {
         return response([
-            'users' => URL::with(['project', 'keywords'])->paginate(5),
+            'users' => URL::with(['project', 'keywords', 'events'])->paginate(5),
         ], 200);
     }
 
@@ -217,6 +219,14 @@ class UrlController extends Controller
 
         $url = URL::create($fields);
 
+        Event::create([
+            'user_id' => Auth::user()->id,
+            'entity_type' => URL::class,
+            'entity_id' => $url->id,
+            'action' => Event::CREATE_ACTION,
+            'data' =>  $fields,
+        ]);
+
         return response([
             'url' => $url,
         ], 201);
@@ -266,7 +276,7 @@ class UrlController extends Controller
     public function show(URL $url): Response
     {
         return response([
-            'url' => URL::with(['project', 'keywords'])->find($url->id),
+            'url' => URL::with(['project', 'keywords', 'events'])->find($url->id),
         ], 200);
     }
 
@@ -350,6 +360,8 @@ class UrlController extends Controller
             $fields['status'] = 'NEW';
         }
 
+        $attributes = $url->getAttributes();
+
         $url->fill($fields)->save();
 
         if(isset($fields['keywords'])) {
@@ -381,8 +393,17 @@ class UrlController extends Controller
             }
         }
 
+        Event::create([
+            'user_id' => Auth::user()->id,
+            'entity_type' => URL::class,
+            'entity_id' => $url->id,
+            'action' => Event::UPDATE_ACTION,
+            'data' =>  $fields,
+            'oldData' => $attributes,
+        ]);
+
         return response([
-            'url' => URL::with('keywords')->find($url->id),
+            'url' => URL::with('keywords', 'events')->find($url->id),
         ], 200);
     }
 

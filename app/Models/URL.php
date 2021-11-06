@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
  * App\Models\URL
@@ -78,6 +79,14 @@ class URL extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    /**
+     * @return MorphMany
+     */
+    public function events(): MorphMany
+    {
+        return $this->morphMany(Event::class, 'entity')->with('user');
     }
 
 }

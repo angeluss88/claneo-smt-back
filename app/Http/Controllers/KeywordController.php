@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Event;
 use App\Models\Keyword;
+use Auth;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
@@ -241,6 +243,14 @@ class KeywordController extends Controller
 
         $keyword = Keyword::create($fields);
 
+        Event::create([
+            'user_id' => Auth::user()->id,
+            'entity_type' => Keyword::class,
+            'entity_id' => $keyword->id,
+            'action' => Event::CREATE_ACTION,
+            'data' =>  $fields,
+        ]);
+
         return response([
             'keyword' => $keyword,
         ], 201);
@@ -375,7 +385,18 @@ class KeywordController extends Controller
 
         $fields = $this->replaceFields($fields);
 
+        $attributes = $keyword->getAttributes();
+
         $keyword->fill($fields)->save();
+
+        Event::create([
+            'user_id' => Auth::user()->id,
+            'entity_type' => Keyword::class,
+            'entity_id' => $keyword->id,
+            'action' => Event::UPDATE_ACTION,
+            'data' =>  $fields,
+            'oldData' => $attributes,
+        ]);
 
         return response([
             'keyword' => $keyword,

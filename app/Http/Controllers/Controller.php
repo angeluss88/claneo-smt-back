@@ -60,6 +60,10 @@ class Controller extends BaseController
      *     name="Keywords",
      *     description="API Endpoints of Keywords"
      * )
+     * @OA\Tag(
+     *     name="Events",
+     *     description="API Endpoints of Events"
+     * )
      *
      * @OA\SecurityScheme(
      *     type="http",

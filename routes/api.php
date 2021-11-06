@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\EventController;
 use App\Http\Controllers\ImportStrategyController;
 use App\Http\Controllers\KeywordController;
 use App\Http\Controllers\ProjectController;
@@ -43,6 +44,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::post('/import_strategy', [ImportStrategyController::class, 'import'])->middleware('role:admin,SEO,Researcher');
     Route::get('/expandGA/', [ImportStrategyController::class, 'expandGA'])->middleware('role:admin,SEO,Researcher');
+    Route::get('/events', [EventController::class, 'index'])->middleware('role:admin');
 });
 
 
