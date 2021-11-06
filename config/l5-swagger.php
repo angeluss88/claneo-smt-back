@@ -12,7 +12,7 @@ return [
                 /*
                  * Route for accessing api documentation interface
                 */
-                'api' => 'api/documentation',
+                'api' => env('L5_SWAGGER_ROUTE'),
             ],
             'paths' => [
                 /*
