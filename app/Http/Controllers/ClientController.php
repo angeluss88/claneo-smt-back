@@ -11,7 +11,7 @@ class ClientController extends Controller
 {
     /**
      * @OA\Get(
-     *     path="/clients",
+     *     path="/clients?page={page}&count={count}",
      *     operationId="clients_index",
      *     tags={"Clients"},
      *     summary="Client Companies List",
@@ -138,19 +138,39 @@ class ClientController extends Controller
      *         response="401",
      *         description="Unauthenticated",
      *     ),
+     *     @OA\Parameter(
+     *         name="page",
+     *         in="path",
+     *         description="The page",
+     *         required=false,
+     *         example=1,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="count",
+     *         in="path",
+     *         description="Count of rows",
+     *         required=false,
+     *         example=10,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
      *     security={
      *       {"bearerAuth": {}},
      *     },
      * )
      *
+     * @param Request $request
      * @return Response
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $clients = Client::with('user')->paginate(5);
-
+        $count = $request->count == '{count}' ? 10 : $request->count;
         return response([
-            'clients' => $clients,
+            'clients' => Client::with('user')->paginate($count),
         ], 200);
     }
 

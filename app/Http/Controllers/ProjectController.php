@@ -12,7 +12,7 @@ class ProjectController extends Controller
 {
     /**
      * @OA\Get(
-     *     path="/projects",
+     *     path="/projects?page={page}&count={count}",
      *     operationId="projects_index",
      *     tags={"Projects"},
      *     summary="Projects List",
@@ -139,19 +139,39 @@ class ProjectController extends Controller
      *         response="401",
      *         description="Unauthenticated",
      *     ),
+     *     @OA\Parameter(
+     *         name="page",
+     *         in="path",
+     *         description="The page",
+     *         required=false,
+     *         example=1,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="count",
+     *         in="path",
+     *         description="Count of rows",
+     *         required=false,
+     *         example=10,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
      *     security={
      *       {"bearerAuth": {}},
      *     },
      * )
      *
+     * @param Request $request
      * @return Response
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $projects = Project::with('user')->paginate(5);
-
+        $count = $request->count == '{count}' ? 10 : $request->count;
         return response([
-            'projects' => $projects,
+            'projects' => Project::with('user')->paginate($count),
         ], 200);
     }
 

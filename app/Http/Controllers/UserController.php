@@ -11,7 +11,7 @@ class UserController extends Controller
 {
     /**
      * @OA\Get(
-     *     path="/users",
+     *     path="/users?page={page}&count={count}",
      *     operationId="users_index",
      *     tags={"Users"},
      *     summary="List of users",
@@ -138,19 +138,38 @@ class UserController extends Controller
      *         response="401",
      *         description="Unauthenticated",
      *     ),
+     *     @OA\Parameter(
+     *         name="page",
+     *         in="path",
+     *         description="The page",
+     *         required=false,
+     *         example=1,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="count",
+     *         in="path",
+     *         description="Count of rows",
+     *         required=false,
+     *         example=10,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
      *     security={
      *       {"bearerAuth": {}},
      *     },
      * )
-     *
+     * @param Request $request
      * @return Response
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $users = User::with('roles', 'client', 'projects')->paginate(5);
-
+        $count = $request->count == '{count}' ? 10 : $request->count;
         return response([
-            'users' => $users,
+            'users' => User::with('roles', 'client', 'projects')->paginate($count),
         ], 200);
     }
 
