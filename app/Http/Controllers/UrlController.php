@@ -6,6 +6,8 @@ use App\Models\Event;
 use App\Models\Keyword;
 use App\Models\URL;
 use Auth;
+use Carbon\Carbon;
+use DateTime;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
@@ -14,7 +16,7 @@ class UrlController extends Controller
 {
     /**
      * @OA\Get(
-     *     path="/urls",
+     *     path="/urls?page={page}&count={count}&keywords={keywords}&import_date={import_date}&categories={categories}",
      *     operationId="urls_index",
      *     tags={"URLs"},
      *     summary="List of urls",
@@ -141,17 +143,124 @@ class UrlController extends Controller
      *         response="401",
      *         description="Unauthenticated",
      *     ),
+     *     @OA\Parameter(
+     *         name="page",
+     *         in="path",
+     *         description="The page",
+     *         required=false,
+     *         example=1,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="count",
+     *         in="path",
+     *         description="Count of rows",
+     *         required=false,
+     *         example=10,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="keywords",
+     *         in="path",
+     *         description="Keyword(s)",
+     *         required=false,
+     *         example="kw1,kw2,kw3",
+     *         @OA\Schema(
+     *             type="string",
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="import_date",
+     *         in="path",
+     *         description="Import date range (Y.m.d H:i-Y.m.d H:i)",
+     *         required=false,
+     *         example="2021.11.03 22:00-2021.12.03 23:00",
+     *         @OA\Schema(
+     *             type="string",
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="categories",
+     *         in="path",
+     *         description="Categories filter",
+     *         required=false,
+     *         example="main_category:Main,sub_category:Webentwickler,sub_category2:München",
+     *         @OA\Schema(
+     *             type="string",
+     *         )
+     *     ),
      *     security={
      *       {"bearerAuth": {}},
      *     },
      * )
      *
+     * @param Request $request
      * @return Response
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $count = $request->count == '{count}' ? 10 : $request->count;
+
+        $url = URL::with(['project', 'keywords', 'events']);
+
+        if($request->keywords && $request->keywords !== '{keywords}') {
+            $keywords = explode(',', $request->keywords);
+
+            foreach ($keywords as $k => $keyword) {
+                $keywords[$k] = trim(htmlspecialchars($keyword));
+            }
+
+            $url->whereHas('keywords', function ($q) use ($keywords) {
+                $q->whereIn('keyword', $keywords);
+            });
+        }
+
+        if($request->categories && $request->categories !== '{categories}') {
+            $categories = explode(',', $request->categories);
+            $categoryFields = [
+                'main_category',
+                'sub_category',
+                'sub_category2',
+                'sub_category3',
+                'sub_category4',
+                'sub_category5',
+            ];
+            $categoriesFilter = [];
+
+            foreach ($categories as $k => $category) {
+                $category = explode(':', $category);
+
+                if( count($category) == 2
+                    && isset($category[0]) && isset($category[1])
+                    && in_array($category[0], $categoryFields)
+                ) {
+                    $categoriesFilter[$category[0]] = trim( $category[1] );
+                }
+            }
+
+            foreach ($categoriesFilter as $field => $category) {
+                $url->where($field, $category);
+            }
+
+        }
+
+        if($request->import_date) {
+            $importDates = explode('-', $request->import_date);
+            if(count($importDates) == 2) {
+                $from = DateTime::createFromFormat('Y.m.d H:i', $importDates[0]);
+                $to = DateTime::createFromFormat('Y.m.d H:i', $importDates[1]);
+                if($from && $to) {
+                    $url->whereBetween('updated_at', [$from, $to]);
+                }
+            }
+        }
+
         return response([
-            'users' => URL::with(['project', 'keywords', 'events'])->paginate(5),
+            'urls' => $url->paginate($count),
         ], 200);
     }
 
