@@ -466,6 +466,13 @@ class KeywordController extends Controller
     public function destroy(Keyword $keyword): Response
     {
         $keyword->delete();
+        Event::create([
+            'user_id' => Auth::user()->id,
+            'entity_type' => Keyword::class,
+            'entity_id' => $keyword->id,
+            'action' => Event::DELETE_ACTION,
+            'data' =>  [],
+        ]);
 
         return response([], 204);
     }

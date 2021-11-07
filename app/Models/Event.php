@@ -13,6 +13,7 @@ class Event extends Model
 
     const CREATE_ACTION = 'create';
     const UPDATE_ACTION = 'update';
+    const DELETE_ACTION = 'delete';
 
     public $fillable = [
         'user_id',

@@ -555,6 +555,14 @@ class UrlController extends Controller
     {
         $url->delete();
 
+        Event::create([
+            'user_id' => Auth::user()->id,
+            'entity_type' => URL::class,
+            'entity_id' => $url->id,
+            'action' => Event::DELETE_ACTION,
+            'data' =>  [],
+        ]);
+
         return response([], 204);
     }
 }
