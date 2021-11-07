@@ -104,7 +104,7 @@ class ImportStrategyController extends Controller
             $current_ranking_position_key = 'current_ranking_position';
         } else if(isset($headers[$keys['current_ranking_position2']])) {
             $current_ranking_position_key = 'current_ranking_position2';
-        } else if(isset($headers[$keys['current_ranking_position']])) {
+        } else if(isset($headers[$keys['current_ranking_position3']])) {
             $current_ranking_position_key = 'current_ranking_position3';
         } else {
             return response()->json([
@@ -113,19 +113,10 @@ class ImportStrategyController extends Controller
             ], 422);
         }
 
-
-        // url massive to do mass insert after parsing. keywords will be an array of URL
-        $urls = [];
-
-        // keywords. format ['url' => [['keyword1'], ['keyword2'],]
-        $keywords = [];
-
-        // array to keep many-to-many for urls-keys
-        $url_to_keywords = [];
-
-        // any errors during parsing
-        $failed_rows = [];
-
+        $urls = []; // urls array to do mass insert after parsing. keywords will be an array of URL
+        $keywords = []; // keywords. format ['url' => [['keyword1'], ['keyword2'],]
+        $url_to_keywords = []; // array to keep many-to-many for urls-keys
+        $failed_rows = []; // any errors during parsing
 
         // begin parsing process
         foreach ($csv as $row_number => $row) {
@@ -135,13 +126,13 @@ class ImportStrategyController extends Controller
             // begin validation process
             // if we don't have any of required fields - stop parse this row and add item to failed rows
             foreach ($required_fields as $required_field) {
-                if(!$row[$headers[$keys[$required_field]]]) {
+                if(!$row[$headers[$keys[$required_field]]] && $row[$headers[$keys[$required_field]]] !== "0") {
                     $failed_rows[] = [
                         'row' => $row_number,
                         'attribute' => $keys[$required_field],
                         'error_message' => 'this field is required',
                     ];
-                    continue 2; // @TODO check it!!!
+                    continue 2;
                 }
             }
 
@@ -158,7 +149,7 @@ class ImportStrategyController extends Controller
 
             // create keyword item form row
             $keyword['keyword'] = $row[$headers[$keys['keyword']]];
-            $keyword['search_volume'] = $row[$headers[$keys['search_volume']]];
+            $keyword['search_volume'] = (int) $row[$headers[$keys['search_volume']]];
             $keyword['search_volume_clustered'] = isset($headers[$keys['sv_clustered']]) ? $row[$headers[$keys['sv_clustered']]] : null;
             $keyword['search_volume_clustered'] = (int) $keyword['search_volume_clustered'];
 
@@ -220,12 +211,12 @@ class ImportStrategyController extends Controller
             'project_id' => $project->id,
         ]);
 
-        foreach ($urls as $value) {
-            $value['import_id'] = $import->id;
+        foreach ($urls as $k => $value) {
+            $urls[$k]['import_id'] = $import->id;
         }
 
-        foreach ($keywords as $value) {
-            $value['import_id'] = $import->id;
+        foreach ($keywords as $k => $value) {
+            $keywords[$k]['import_id'] = $import->id;
         }
 
         // save all prepared urls from $urls

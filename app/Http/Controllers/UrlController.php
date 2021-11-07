@@ -469,7 +469,7 @@ class UrlController extends Controller
             $fields['status'] = 'NEW';
         }
 
-        $attributes = $url->getAttributes();
+        $oldAttributes = $url->getOriginal();
 
         $url->fill($fields)->save();
 
@@ -508,7 +508,7 @@ class UrlController extends Controller
             'entity_id' => $url->id,
             'action' => Event::UPDATE_ACTION,
             'data' =>  $fields,
-            'oldData' => $attributes,
+            'oldData' => $oldAttributes,
         ]);
 
         return response([

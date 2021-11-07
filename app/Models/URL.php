@@ -62,6 +62,7 @@ class URL extends Model
         'avg_order_value',
         'bounce_rate',
         'page_type',
+        'import_id',
     ];
 
     /**
