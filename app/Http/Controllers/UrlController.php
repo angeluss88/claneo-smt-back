@@ -3,10 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
-use App\Models\Keyword;
 use App\Models\URL;
 use Auth;
-use Carbon\Carbon;
 use DateTime;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -16,7 +14,7 @@ class UrlController extends Controller
 {
     /**
      * @OA\Get(
-     *     path="/urls?page={page}&count={count}&keywords={keywords}&import_date={import_date}&categories={categories}",
+     *     path="/urls?page={page}&count={count}&sort={sort}&keywords={keywords}&import_date={import_date}&categories={categories}&project_id={project_id}",
      *     operationId="urls_index",
      *     tags={"URLs"},
      *     summary="List of urls",
@@ -193,6 +191,26 @@ class UrlController extends Controller
      *             type="string",
      *         )
      *     ),
+     *     @OA\Parameter(
+     *         name="project_id",
+     *         in="path",
+     *         description="Project filter",
+     *         required=false,
+     *         example=1,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort",
+     *         in="path",
+     *         description="Sort by field. Format: 'field.direction'. Direction must be asc or desc",
+     *         required=false,
+     *         example="url.desc",
+     *         @OA\Schema(
+     *             type="string",
+     *         )
+     *     ),
      *     security={
      *       {"bearerAuth": {}},
      *     },
@@ -217,6 +235,10 @@ class UrlController extends Controller
             $url->whereHas('keywords', function ($q) use ($keywords) {
                 $q->whereIn('keyword', $keywords);
             });
+        }
+
+        if ($request->project_id && $request->project_id !== '{project_id}') {
+            $url->where('project_id', (int) $request->project_id);
         }
 
         if($request->categories && $request->categories !== '{categories}') {
@@ -256,6 +278,16 @@ class UrlController extends Controller
                 if($from && $to) {
                     $url->whereBetween('updated_at', [$from, $to]);
                 }
+            }
+        }
+
+        if($request->sort && $request->sort !== '{sort}') {
+            $sort = explode('.', $request->sort);
+
+            if(isset($sort[0]) && isset($sort[1]) && in_array($sort[1], ['asc', 'desc'])) {
+                $url->orderBy($sort[0], $sort[1]);
+            } else {
+                die('ok');
             }
         }
 
