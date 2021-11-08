@@ -2,8 +2,12 @@
 
 namespace App\Models;
 
+use Eloquent;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * App\Models\Import
@@ -11,17 +15,17 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $id
  * @property int $user_id
  * @property int $project_id
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @method static \Illuminate\Database\Eloquent\Builder|Import newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|Import newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|Import query()
- * @method static \Illuminate\Database\Eloquent\Builder|Import whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Import whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Import whereProjectId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Import whereUpdatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|Import whereUserId($value)
- * @mixin \Eloquent
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @method static Builder|Import newModelQuery()
+ * @method static Builder|Import newQuery()
+ * @method static Builder|Import query()
+ * @method static Builder|Import whereCreatedAt($value)
+ * @method static Builder|Import whereId($value)
+ * @method static Builder|Import whereProjectId($value)
+ * @method static Builder|Import whereUpdatedAt($value)
+ * @method static Builder|Import whereUserId($value)
+ * @mixin Eloquent
  */
 class Import extends Model
 {
@@ -40,5 +44,21 @@ class Import extends Model
     public $fillable = [
         'user_id', 'project_id',
     ];
+
+    /**
+     * @return BelongsTo
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * @return BelongsTo
+     */
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
 
 }

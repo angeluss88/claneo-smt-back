@@ -32,7 +32,7 @@ class EventController extends Controller
      *                          property="data",
      *                          type="array",
      *                          collectionFormat="multi",
-     *                          @OA\Items(ref="#/components/schemas/KeywordResource")
+     *                          @OA\Items(ref="#/components/schemas/EventResource")
      *                     )
      *                 ),
      *             ),
@@ -169,7 +169,7 @@ class EventController extends Controller
     {
         $count = $request->count == '{count}' ? 10 : $request->count;
         return response([
-            'keywords' => Event::with(['entity'])->paginate($count),
+            'events' => Event::with(['entity', 'user'])->paginate($count),
         ], 200);
     }
 }
