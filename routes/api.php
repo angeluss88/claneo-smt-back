@@ -45,6 +45,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/import_strategy', [ImportStrategyController::class, 'import'])->middleware('role:admin,SEO,Researcher');
     Route::get('/expandGA/', [ImportStrategyController::class, 'expandGA'])->middleware('role:admin,SEO,Researcher');
     Route::get('/imports', [ImportStrategyController::class, 'index'])->middleware('role:admin');
+    Route::get('/imports/{import}', [ImportStrategyController::class, 'show'])->middleware('role:admin');
     Route::get('/events', [EventController::class, 'index'])->middleware('role:admin');
 });
 

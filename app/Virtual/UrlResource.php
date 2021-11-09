@@ -192,12 +192,33 @@ class UrlResource
 
     /**
      * @OA\Property(
+     *     title="import_id",
+     *     description="import_id",
+     *     example=1,
+     * )
+     *
+     * @var integer
+     */
+    public $import_id;
+
+    /**
+     * @OA\Property(
      *     title="project",
      *     type="object",
      *     @OA\Schema (ref="#/components/schemas/ProjectResource")
      * )
      */
     public $project;
+
+    /**
+     * @OA\Property(
+     *     title="events",
+     *     type="array",
+     *     collectionFormat="multi",
+     *     @OA\Items(ref="#/components/schemas/EventResource")
+     * )
+     */
+    public $events;
 
     /**
      * @OA\Property(

@@ -190,6 +190,54 @@ class ImportStrategyController extends Controller
     }
 
     /**
+     * @OA\Get(
+     *     path="/imports/{import}",
+     *     operationId="imports_show",
+     *     tags={"Content Strategy"},
+     *     summary="Show import",
+     *     @OA\Response(
+     *         response="200",
+     *         description="Everything is fine",
+     *         @OA\JsonContent(
+     *             @OA\Property(
+     *             property="url",
+     *             type="object",
+     *             ref="#/components/schemas/ImportResource",
+     *         )),
+     *     ),
+     *     @OA\Response(
+     *         response="401",
+     *         description="Unauthenticated",
+     *     ),
+     *     @OA\Response(
+     *         response="404",
+     *         description="Error: Not Found",
+     *     ),
+     *     @OA\Parameter(
+     *         name="import",
+     *         in="path",
+     *         description="The import id",
+     *         required=true,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     security={
+     *       {"bearerAuth": {}},
+     *     },
+     * )
+     *
+     * @param  Import $import
+     * @return Response
+     */
+    public function show(Import $import): Response
+    {
+        return response([
+            'import' => Import::with(['user', 'project'])->find($import->id),
+        ], 200);
+    }
+
+    /**
      *
      * @OA\Post (
      *     path="/import_strategy",

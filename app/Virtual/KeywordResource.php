@@ -159,8 +159,18 @@ class KeywordResource
      *     title="urls",
      *     type="array",
      *     collectionFormat="multi",
-     *     @OA\Items(ref="#/components/schemas/UrlResource")
+     *     @OA\Items(ref="#/components/schemas/UrlNoRelationsResource")
      * )
      */
     public $urls;
+
+    /**
+     * @OA\Property(
+     *     title="events",
+     *     type="array",
+     *     collectionFormat="multi",
+     *     @OA\Items(ref="#/components/schemas/EventResource")
+     * )
+     */
+    public $events;
 }

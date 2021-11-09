@@ -172,7 +172,7 @@ class KeywordController extends Controller
     {
         $count = $request->count == '{count}' ? 10 : $request->count;
         return response([
-            'keywords' => Keyword::with(['urls'])->paginate($count),
+            'keywords' => Keyword::with(['urls', 'events'])->paginate($count),
         ], 200);
     }
 
@@ -300,7 +300,7 @@ class KeywordController extends Controller
     public function show(Keyword $keyword): Response
     {
         return response([
-            'keyword' => Keyword::with(['urls'])->find($keyword->id),
+            'keyword' => Keyword::with(['urls', 'events'])->find($keyword->id),
         ], 200);
     }
 

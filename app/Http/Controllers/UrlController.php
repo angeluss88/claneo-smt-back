@@ -223,7 +223,7 @@ class UrlController extends Controller
     {
         $count = $request->count == '{count}' ? 10 : $request->count;
 
-        $url = URL::with(['project', 'keywords', 'events']);
+        $url = URL::with(['project', 'events', 'keywords']);
 
         if($request->keywords && $request->keywords !== '{keywords}') {
             $keywords = explode(',', $request->keywords);
@@ -417,7 +417,7 @@ class UrlController extends Controller
     public function show(URL $url): Response
     {
         return response([
-            'url' => URL::with(['project', 'keywords', 'events'])->find($url->id),
+            'url' => URL::with(['project', 'events', 'keywords'])->find($url->id),
         ], 200);
     }
 
