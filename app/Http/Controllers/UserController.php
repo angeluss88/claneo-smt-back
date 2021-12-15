@@ -353,6 +353,9 @@ class UserController extends Controller
      */
     public function destroy(User $user): Response
     {
+        if($user->is_superadmin) {
+            return response(['message' => "can't delete superadmin"], 404);
+        }
         $user->delete();
 
         return response([], 204);
