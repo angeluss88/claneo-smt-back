@@ -171,7 +171,7 @@ class ProjectController extends Controller
     {
         $count = $request->count == '{count}' ? 10 : $request->count;
         return response([
-            'projects' => Project::with('user')->paginate($count),
+            'projects' => Project::with('user', 'client')->paginate($count),
         ], 200);
     }
 

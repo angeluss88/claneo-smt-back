@@ -170,7 +170,7 @@ class ClientController extends Controller
     {
         $count = $request->count == '{count}' ? 10 : $request->count;
         return response([
-            'clients' => Client::with('user')->paginate($count),
+            'clients' => Client::with('user', 'projects')->paginate($count),
         ], 200);
     }
 

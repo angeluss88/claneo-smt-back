@@ -57,7 +57,7 @@ use Laravel\Sanctum\PersonalAccessToken;
  * @property-read Client|null $client
  * @property-read Collection|Project[] $domain
  * @property-read int|null $domain_count
- * @property-read Collection|\App\Models\Project[] $projects
+ * @property-read Collection|Project[] $projects
  * @property-read int|null $projects_count
  */
 class User extends Authenticatable
