@@ -21,6 +21,7 @@ class AdminSeeder extends Seeder
             'last_name' => 'admin',
             'email' => env('APP_ADMIN_EMAIL', 'admin@loc'),
             'password' => Hash::make(env('APP_ADMIN_PASSWORD', '12345')),
+            'is_superadmin' => 1,
         ]);
 
         DB::table('role_user')->insert([

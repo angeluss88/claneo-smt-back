@@ -28,6 +28,7 @@ use Laravel\Sanctum\PersonalAccessToken;
  * @property Carbon|null $email_verified_at
  * @property string $password
  * @property int $privacy_policy_flag
+ * @property int $is_superadmin
  * @property string|null $remember_token
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -85,6 +86,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'is_superadmin',
     ];
 
     /**
@@ -139,7 +141,7 @@ class User extends Authenticatable
      */
     public function hasRole($role): bool
     {
-        if ($this->roles()->where('name', $role)->first()) {
+        if ($this->is_superadmin || $this->roles()->where('name', $role)->first()) {
             return true;
         }
         return false;

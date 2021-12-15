@@ -170,7 +170,7 @@ class AuthController extends Controller
             ], 401);
         }
 
-        if($user->hasRole('Client') && !$user->privacy_policy_flag){
+        if($user->is_superadmin != 1 && $user->hasRole('Client') && !$user->privacy_policy_flag){
             return response([
                 'message' => 'User should accept Privacy Policy first',
             ], 403);
