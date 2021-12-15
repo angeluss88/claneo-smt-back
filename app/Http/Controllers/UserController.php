@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Client;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -283,13 +284,32 @@ class UserController extends Controller
             'privacy_policy_flag' => 'boolean',
             'password' => 'string',
             'roles' => 'array',
+            'client' => 'string',
+            'client_id' => 'integer',
         ]);
+
+        $client = null;
+        if(isset($fields['client_id'])) {
+            $client = Client::find($fields['client_id']);
+        }
+        if(isset($fields['client'])) {
+            $client = Client::whereName($fields['client'])->firstOrFail();
+        }
+
+        if(!$client && $client->user_id) {  //@TODO discuss this case
+            return response(['message' => 'This Company is already assigned to another user'], 422);
+        }
 
         if(isset($fields['roles']) && !empty($fields['roles'])) {
             $user->roles()->sync($fields['roles']);
         }
 
         $user->fill($fields)->save();
+
+        if ($client) {
+            $client->user_id = $user->id;
+            $client->save();
+        }
 
         return response([
             'user' => User::with('roles', 'client', 'projects')->find($user->id),

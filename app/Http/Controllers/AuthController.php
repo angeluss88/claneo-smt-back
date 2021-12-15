@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\ForgotPasswordLinkMail;
 use App\Mail\SetPasswordLinkMail;
+use App\Models\Client;
 use Carbon\Carbon;
 use DB;
 use Illuminate\Http\Request;
@@ -35,6 +36,10 @@ class AuthController extends Controller
      *         response="422",
      *         description="The given data was invalid",
      *     ),
+     *     @OA\Response(
+     *         response="404",
+     *         description="Client not found",
+     *     ),
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(ref="#/components/schemas/RegisterRequest")
@@ -54,8 +59,20 @@ class AuthController extends Controller
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
             'roles' => 'array',
-            'client' => 'integer',
+            'client' => 'string',
+            'client_id' => 'integer',
         ]);
+
+        $client = null;
+        if(isset($fields['client_id'])) {
+            $client = Client::find($fields['client_id']);
+        } else if(isset($fields['client'])) {
+            $client = Client::whereName($fields['client'])->firstOrFail();
+        }
+
+        if($client && $client->user_id) {  //@TODO discuss this case
+            return response(['message' => 'This Company is already assigned to another user'], 422);
+        }
 
         $fields['password'] = Str::random();
 
@@ -90,6 +107,11 @@ class AuthController extends Controller
         ];
 
         Mail::to($user['email'])->send(new SetPasswordLinkMail($details));
+
+        if ($client) {
+            $client->user_id = $user->id;
+            $client->save();
+        }
 
         $response = [
             'user' => $user,

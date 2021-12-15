@@ -46,6 +46,17 @@ class RegisterRequest
 
     /**
      * @OA\Property(
+     *     title="client",
+     *     description="Company name",
+     *     example="Client",
+     * )
+     *
+     * @var string
+     */
+    public $client;
+
+    /**
+     * @OA\Property(
      *     title="roles",
      *     description="Roles of user",
      *     example={1, 2},
