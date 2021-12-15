@@ -14,3 +14,7 @@ yarn-error.log
 /.idea
 /.vscode
 /storage/api-docs/api-docs.json
+/config/ga.json
+/config/ga_oauth.json
+/config/credentials.json
+
