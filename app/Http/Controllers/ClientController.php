@@ -327,7 +327,7 @@ class ClientController extends Controller
         $fields = $request->validate([
             'name' => [
                 'string',
-                'max|255',
+                'max:255',
                 Rule::unique('clients')->ignore($client->id),
             ],
             'user_id' => 'integer',
