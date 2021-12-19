@@ -11,7 +11,7 @@ class ClientController extends Controller
 {
     /**
      * @OA\Get(
-     *     path="/clients?page={page}&count={count}",
+     *     path="/clients?page={page}&count={count}&no_user={no_user}",
      *     operationId="clients_index",
      *     tags={"Clients"},
      *     summary="Client Companies List",
@@ -158,6 +158,16 @@ class ClientController extends Controller
      *             type="integer",
      *         )
      *     ),
+     *     @OA\Parameter(
+     *         name="no_user",
+     *         in="path",
+     *         description="No user id filter(send 'yes' to apply)",
+     *         required=false,
+     *         example="",
+     *         @OA\Schema(
+     *             type="string",
+     *         )
+     *     ),
      *     security={
      *       {"bearerAuth": {}},
      *     },
@@ -169,8 +179,15 @@ class ClientController extends Controller
     public function index(Request $request): Response
     {
         $count = $request->count == '{count}' ? 10 : $request->count;
+
+        $clients = Client::with('user', 'projects');
+
+        if($request->no_user === 'yes') {
+            $clients = $clients->whereNull('user_id');
+        }
+
         return response([
-            'clients' => Client::with('user', 'projects')->paginate($count),
+            'clients' => $clients->paginate($count),
         ], 200);
     }
 
