@@ -11,9 +11,12 @@ use Auth;
 use DateTime;
 use Google\ApiCore\ApiException;
 use Google\ApiCore\ValidationException;
+use Google\Service\Drive;
+use Google_Client;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Throwable;
 
 class ImportStrategyController extends Controller
 {
@@ -449,7 +452,7 @@ class ImportStrategyController extends Controller
         $import->status = Import::STATUS_COMPLETE;
         $import->save();
 
-        return response()->json([], 204);
+        return response()->json(['import_id' => $import->id,], 201);
     }
 
     /**
@@ -569,53 +572,63 @@ class ImportStrategyController extends Controller
         return $csv;
     }
 
-    /**
-     * @OA\Get(
-     *      path="/expandGA",
-     *      operationId="expandGA",
-     *      tags={"Content Strategy"},
-     *      summary="Expand GA Data (test mode, in progress...)",
-     *      description="Returns expanded GA data",
-     *      @OA\Response(
-     *          response=200,
-     *          description="Successful operation",
-     *       ),
-     *      @OA\Response(
-     *          response=401,
-     *          description="Unauthenticated",
-     *      ),
-     *      security={
-     *       {"bearerAuth": {}},
-     *     },
-     *     )
-     * @throws ValidationException|ApiException
-     */
+
     public function expandGA()
     {
-        $propertyName = 'https://www.auftragsbank.de/'; // == $project->domain; with http(s)
+        die('Coming soon...');
+        $propertyId = '';
+        $url = '';
+//        $propertyId = '';
+//        $viewId = '';
 
-        $property = $this->ga->getPropertyByName($propertyName);
-        if(!$property) {
-            $property = $this->ga->insertProperty($propertyName);
-            $this->ga->insertView ($property->getId(), 'eCommerce View');
-        }
+        try {
+            if(!is_numeric($propertyId)) {
+                $reports = $this->ga->getReport($propertyId, $url);
 
-        // prepare data for a call
-        $datetime = new DateTime();
-        $datetime = $datetime->modify('-16 months')->format('Y-m-d');
-        $dimensions = ['city'];
-        $metrics = ['activeUsers'];
+                $result = [];
+                foreach ($reports as $viewName => $report) {
+                    $result[$viewName] = $this->ga->parseUAResults($report);
+                }
 
-        // Make an API call.
-        $response = $this->ga->makeGAApiCall ($property, $dimensions, $metrics, $datetime);
+                var_dump($result); die;
+            } else {
+                // prepare data for a call
+                $datetime = new DateTime();
+                $datetime = $datetime->modify('-2 days')->format('Y-m-d');
+                $dimensions = ['itemName', 'appVersion'];
+                $metrics = ['totalRevenue', 'averagePurchaseRevenue'];
 
-        $result = [];
-        foreach ($response->getRows() as $row) {
-            $result[] = $row->getDimensionValues()[0]->getValue() . ' ' . $row->getMetricValues()[0]->getValue() . PHP_EOL;
+                // Make an API call.
+                $response = $this->ga->makeGAApiCall($propertyId, $dimensions, $metrics, $datetime);
+
+                $result = [];
+                foreach ($response->getRows() as $row) {
+                    $result[] = $row->getDimensionValues()[0]->getValue() . ' ' . $row->getMetricValues()[0]->getValue() . PHP_EOL;
+                }
+            }
+        } catch (Throwable $e) {
+            echo($e->getMessage()); die;
         }
 
         return response([
             'result' => $result,
         ], 200);
+    }
+
+    public function expandGA1()
+    {
+        die('no');
+        $client = new Google_Client();
+        $client->setApplicationName('"Hello Analytics Reporting"');
+        $client->setAuthConfig(config_path() . DIRECTORY_SEPARATOR . 'credentials.json');
+        $client->addScope('https://www.googleapis.com/auth/analytics.readonly');
+
+        // returns a Guzzle HTTP Client
+        $httpClient = $client->authorize();
+
+        // make an HTTP request
+        $response = $httpClient->get('https://www.googleapis.com/plus/v1/people/me');
+
+        var_dump($response->getBody());
     }
 }

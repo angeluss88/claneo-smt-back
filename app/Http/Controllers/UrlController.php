@@ -14,7 +14,7 @@ class UrlController extends Controller
 {
     /**
      * @OA\Get(
-     *     path="/urls?page={page}&count={count}&sort={sort}&keywords={keywords}&import_date={import_date}&categories={categories}&project_id={project_id}",
+     *     path="/urls?page={page}&count={count}&sort={sort}&keywords={keywords}&import_date={import_date}&categories={categories}&project_id={project_id}&import_id={import_id}",
      *     operationId="urls_index",
      *     tags={"URLs"},
      *     summary="List of urls",
@@ -202,6 +202,16 @@ class UrlController extends Controller
      *         )
      *     ),
      *     @OA\Parameter(
+     *         name="import_id",
+     *         in="path",
+     *         description="Import_id filter",
+     *         required=false,
+     *         example=1,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     @OA\Parameter(
      *         name="sort",
      *         in="path",
      *         description="Sort by field. Format: 'field.direction'. Direction must be asc or desc",
@@ -239,6 +249,10 @@ class UrlController extends Controller
 
         if ($request->project_id && $request->project_id !== '{project_id}') {
             $url->where('project_id', (int) $request->project_id);
+        }
+
+        if ($request->import_id && $request->import_id !== '{import_id}') {
+            $url->where('import_id', (int) $request->import_id);
         }
 
         if($request->categories && $request->categories !== '{categories}') {
@@ -286,8 +300,6 @@ class UrlController extends Controller
 
             if(isset($sort[0]) && isset($sort[1]) && in_array($sort[1], ['asc', 'desc'])) {
                 $url->orderBy($sort[0], $sort[1]);
-            } else {
-                die('ok');
             }
         }
 

@@ -11,23 +11,24 @@ use Google\ApiCore\ApiException;
 use Google\ApiCore\ValidationException;
 use Google\Exception;
 use Google\Service\Analytics\Accounts;
-use Google\Service\Analytics\Profile;
 use Google\Service\Analytics\Webproperties;
 use Google\Service\Analytics\Webproperty;
+use Google\Service\AnalyticsReporting\GetReportsResponse;
 use Google_Client;
 use Google_Service_Analytics;
-use Google_Service_Analytics_Profile;
-use Google_Service_Analytics_Webproperty;
-use Throwable;
+use Google_Service_AnalyticsReporting;
 
 class GoogleAnalyticsService
 {
     public $analytics;
-    protected $key_file = 'service-account-credentials.json';
-    protected $beta_analytics_data_credentials = 'ga.json';
-    public $scopes = ['https://www.googleapis.com/auth/analytics.edit'];
+    public $reportings;
+    protected $key_file = 'credentials.json';
+    protected $beta_analytics_data_credentials = 'credentials.json';
+    public $scopes = ['https://www.googleapis.com/auth/analytics.readonly'];
     public $appName = "Hello Analytics Reporting";
-    public $accountId = '211582088';
+    public $accountId = '109167922';
+    const ADMIN_API_KEY = 'AIzaSyDz-VL6KUrc7sw1JtZG7oNJYJfxT6fJxio';
+    const SERVICE_ACCOUNT = 'starting-account-bfkqmhlvx8j0';
 
     /**
      * @throws Exception
@@ -38,6 +39,7 @@ class GoogleAnalyticsService
         $this->beta_analytics_data_credentials = config_path() . DIRECTORY_SEPARATOR . $this->beta_analytics_data_credentials;
 
         $this->analytics = $this->getAuthorizedAnalyticsObject();
+        $this->reportings = $this->getAuthorizedReportingObject();
     }
 
     /**
@@ -55,6 +57,20 @@ class GoogleAnalyticsService
     }
 
     /**
+     * @return Google_Service_AnalyticsReporting
+     * @throws Exception
+     */
+    protected function getAuthorizedReportingObject (): Google_Service_AnalyticsReporting
+    {
+        $client = new Google_Client();
+        $client->setApplicationName($this->appName);
+        $client->setAuthConfig($this->key_file);
+        $client->setScopes($this->scopes);
+
+        return new Google_Service_AnalyticsReporting($client);
+    }
+
+    /**
      * @return Accounts
      */
     public function getAllGAAccounts (): Accounts
@@ -67,7 +83,7 @@ class GoogleAnalyticsService
      */
     public function getAllGAProperties (): Webproperties
     {
-        return $this->analytics->management_webproperties->listManagementWebproperties($this->accountId);
+        return $this->analytics->management_webproperties->listManagementWebproperties('~all');
     }
 
     /**
@@ -88,48 +104,7 @@ class GoogleAnalyticsService
     }
 
     /**
-     * @param $propertyName
-     * @return null|Webproperty
-     */
-    public function insertProperty($propertyName): ?Webproperty
-    {
-        try {
-            $property = new Google_Service_Analytics_Webproperty();
-            $property->setName($propertyName);
-            $property->setSelfLink($propertyName);
-            $property->setWebsiteUrl($propertyName);
-
-            return $this->analytics->management_webproperties->insert($this->accountId, $property);
-        } catch (Throwable $e) {
-            print 'There was a general API error '
-                . $e->getCode() . ':' . $e->getMessage();
-        }
-
-        return null;
-    }
-
-    /**
-     * @param $propertyId
-     * @param $viewName
-     * @return Profile|null
-     */
-    public function insertView ($propertyId, $viewName, $ecTracking = true): ?Profile
-    {
-        $profile = new Google_Service_Analytics_Profile();
-        $profile->setName($viewName);
-        $profile->setECommerceTracking($ecTracking);
-
-        try {
-            return $this->analytics->management_profiles->insert($this->accountId, $propertyId, $profile);
-        } catch (Throwable $e) {
-            print 'There was a general API error '
-                . $e->getCode() . ':' . $e->getMessage();
-        }
-        return null;
-    }
-
-    /**
-     * @param Webproperty $property
+     * @param int $property
      * @param array $dimensions
      * @param array $metrics
      * @param string $startDate
@@ -138,7 +113,7 @@ class GoogleAnalyticsService
      * @throws ApiException
      * @throws ValidationException
      */
-    public function makeGAApiCall (Webproperty $property, array $dimensions, array $metrics, string $startDate, string $endDate = 'today'): RunReportResponse
+    public function makeGAApiCall (int $property, array $dimensions, array $metrics, string $startDate, string $endDate = 'today'): RunReportResponse
     {
         $client = new BetaAnalyticsDataClient([
             'credentials' => $this->beta_analytics_data_credentials,
@@ -157,7 +132,7 @@ class GoogleAnalyticsService
 
         return $client->runReport(
             [
-                'property' => 'properties/' . $property->getInternalWebPropertyId(), // @TODO investigate and replace with the right property ID
+                'property' => 'properties/' . $property,
                 'dateRanges' => [
                     new DateRange([
                         'start_date' => $startDate,
@@ -169,4 +144,101 @@ class GoogleAnalyticsService
             ]
         );
     }
+
+    /**
+     * @param $propertyId
+     * @param $url
+     * @return array
+     */
+    public function getReport($propertyId, $url): array
+    {
+        $profiles = $this->analytics->management_profiles->listManagementProfiles($this->accountId, $propertyId);
+
+        $data = [];
+        foreach ($profiles as $profile) {
+//            var_dump($profile);die;
+           if($profile->websiteUrl == $url) {
+               $data[$profile->name] = $profile->id;
+           }
+        }
+
+        // Create the DateRange object.
+        $dateRange = new \Google_Service_AnalyticsReporting_DateRange();
+        $dateRange->setStartDate("7daysAgo");
+        $dateRange->setEndDate("today");
+
+        $metrics = [
+            ['expression' => "ga:bounceRate", 'alias' => 'bounceRate'],
+            ['expression' => "ga:transactionsPerSession", 'alias' => 'conversionRate'],
+            ['expression' => "ga:transactionRevenue", 'alias' => 'revenue'],
+            ['expression' => "ga:revenuePerTransaction", 'alias' => 'avgOrderValue'],
+        ];
+
+        // Create the Metrics Data.
+        $metricsData = [];
+
+        foreach ($metrics as $metric){
+            $item = new \Google_Service_AnalyticsReporting_Metric();
+            $item->setExpression($metric['expression']);
+            $item->setAlias($metric['alias']);
+
+            $metricsData[] = $item;
+        }
+
+        $dimensions = [
+            ["ga:pagePath"],
+        ];
+
+        // Create the dimensions Data.
+        $dimensionsData = [];
+
+        foreach ($dimensions as $dimension){
+            $item = new \Google\Service\AnalyticsReporting\Dimension();
+            $item->setName($dimension);
+
+            $dimensionsData[] = $item;
+        }
+
+        $result = [];
+
+        foreach ($data as $name => $id) {
+            // Create the ReportRequest object.
+            $request = new \Google_Service_AnalyticsReporting_ReportRequest();
+            $request->setViewId($id);
+            $request->setDateRanges($dateRange);
+            $request->setMetrics($metricsData);
+            $request->setDimensions($dimensionsData);
+
+            $body = new \Google_Service_AnalyticsReporting_GetReportsRequest();
+            $body->setReportRequests(array($request));
+
+            $result[$name] = $this->reportings->reports->batchGet( $body );
+        }
+
+        return $result;
+    }
+
+    public function parseUAResults(GetReportsResponse $reports): array
+    {
+        $result = [];
+        foreach ($reports as $report) {
+            $header = $report->getColumnHeader();
+            $metricHeaders = $header->getMetricHeader()->getMetricHeaderEntries();
+            $rows = $report->getData()->getRows();
+
+            foreach ($rows as $row) {
+                $metrics = $row->getMetrics();
+
+                foreach ($metrics as $metric) {
+                    foreach ($metric->getValues() as $k => $value) {
+                        $entry = $metricHeaders[$k];
+                        $result[$entry->getName()] = $value;
+                    }
+                }
+            }
+        }
+
+        return $result;
+    }
 }
+
