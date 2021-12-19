@@ -16,6 +16,7 @@ use Google_Client;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Throwable;
 
 class ImportStrategyController extends Controller
@@ -238,6 +239,41 @@ class ImportStrategyController extends Controller
         return response([
             'import' => Import::with(['user', 'project'])->find($import->id),
         ], 200);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/import_example",
+     *     operationId="import_example",
+     *     tags={"Content Strategy"},
+     *     summary="Download Import strategy example file",
+     *     @OA\Response(
+     *         response="200",
+     *         description="Download file",
+     *     ),
+     *     @OA\Response(
+     *         response="401",
+     *         description="Unauthenticated",
+     *     ),
+     *     security={
+     *       {"bearerAuth": {}},
+     *     },
+     * )
+     *
+     * @return BinaryFileResponse
+     */
+    public function example(): BinaryFileResponse
+    {
+        $filePath = public_path(). "/files/is_example.csv";
+
+        $headers = array(
+            'Content-Type: text/csv',
+        );
+
+        return response()->download($filePath, 'is_example.csv', $headers);
+//        return response([
+//            'import' => Import::with(['user', 'project'])->find($import->id),
+//        ], 200);
     }
 
     /**
