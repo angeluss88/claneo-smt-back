@@ -20,6 +20,45 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @method static Builder|URL newQuery()
  * @method static Builder|URL query()
  * @mixin Eloquent
+ * @property int $id
+ * @property string $url
+ * @property int|null $project_id
+ * @property string $status
+ * @property string|null $page_type
+ * @property string|null $ecom_conversion_rate
+ * @property string|null $revenue
+ * @property string|null $avg_order_value
+ * @property string|null $bounce_rate
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property string $main_category
+ * @property string|null $sub_category
+ * @property string|null $sub_category2
+ * @property string|null $sub_category3
+ * @property string|null $sub_category4
+ * @property string|null $sub_category5
+ * @property int|null $import_id
+ * @property-read Collection|\App\Models\Event[] $events
+ * @property-read int|null $events_count
+ * @property-read \App\Models\Project|null $project
+ * @method static Builder|URL whereAvgOrderValue($value)
+ * @method static Builder|URL whereBounceRate($value)
+ * @method static Builder|URL whereCreatedAt($value)
+ * @method static Builder|URL whereEcomConversionRate($value)
+ * @method static Builder|URL whereId($value)
+ * @method static Builder|URL whereImportId($value)
+ * @method static Builder|URL whereMainCategory($value)
+ * @method static Builder|URL wherePageType($value)
+ * @method static Builder|URL whereProjectId($value)
+ * @method static Builder|URL whereRevenue($value)
+ * @method static Builder|URL whereStatus($value)
+ * @method static Builder|URL whereSubCategory($value)
+ * @method static Builder|URL whereSubCategory2($value)
+ * @method static Builder|URL whereSubCategory3($value)
+ * @method static Builder|URL whereSubCategory4($value)
+ * @method static Builder|URL whereSubCategory5($value)
+ * @method static Builder|URL whereUpdatedAt($value)
+ * @method static Builder|URL whereUrl($value)
  */
 class URL extends Model
 {

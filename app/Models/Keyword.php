@@ -42,6 +42,10 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Keyword whereSearchVolumeClustered($value)
  * @method static Builder|Keyword whereUpdatedAt($value)
  * @mixin Eloquent
+ * @property string $current_ranking_position
+ * @property-read Collection|\App\Models\Event[] $events
+ * @property-read int|null $events_count
+ * @method static Builder|Keyword whereCurrentRankingPosition($value)
  */
 class Keyword extends Model
 {

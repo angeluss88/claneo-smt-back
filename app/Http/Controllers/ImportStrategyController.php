@@ -9,6 +9,7 @@ use App\Models\URL;
 use App\Services\GoogleAnalyticsService;
 use Auth;
 use DateTime;
+use Google\Analytics\Data\V1beta\DimensionValue;
 use Google\ApiCore\ApiException;
 use Google\ApiCore\ValidationException;
 use Google\Service\Drive;
@@ -271,9 +272,6 @@ class ImportStrategyController extends Controller
         );
 
         return response()->download($filePath, 'is_example.csv', $headers);
-//        return response([
-//            'import' => Import::with(['user', 'project'])->find($import->id),
-//        ], 200);
     }
 
     /**
@@ -608,50 +606,112 @@ class ImportStrategyController extends Controller
         return $csv;
     }
 
-
+    /**
+     * @OA\Get(
+     *      path="/expandGA",
+     *      operationId="expandGA",
+     *      tags={"Content Strategy"},
+     *      summary="Expand GA Data (test mode, in progress...)",
+     *      description="Returns expanded GA data",
+     *      @OA\Response(
+     *          response=200,
+     *          description="Successful operation",
+     *       ),
+     *      @OA\Response(
+     *          response=401,
+     *          description="Unauthenticated",
+     *      ),
+     *      security={
+     *       {"bearerAuth": {}},
+     *     },
+     *     )
+     */
     public function expandGA()
     {
-        die('Coming soon...');
-        $propertyId = '';
-        $url = '';
-//        $propertyId = '';
-//        $viewId = '';
+        $project = Project::find(14);
+
+        $urls = [];
+        foreach ($project->urls as $url){
+            $urls[] = $url->url ;
+        }
 
         try {
-            if(!is_numeric($propertyId)) {
-                $reports = $this->ga->getReport($propertyId, $url);
+            if($project->ga_property_id) {
+                $dimensions = ['pagePath'];
+                $metrics = ['totalRevenue', 'averagePurchaseRevenue', 'engagementRate', 'conversions', 'sessions'];
 
-                $result = [];
-                foreach ($reports as $viewName => $report) {
-                    $result[$viewName] = $this->ga->parseUAResults($report);
+                $response = $this->ga->makeGAApiCall($project->ga_property_id, $dimensions, $metrics, '2020-08-20');
+
+                $result = $this->ga->formatGAResponse($response, $project->domain);
+
+                if(!empty($result)) {
+                    foreach ($result as $url => $data) {
+                        $result[$url]['bounceRate'] = 1 - $data['engagementRate'];
+                        $result[$url]['bounceRate'] = (string) $result[$url]['bounceRate'];
+                        $result[$url]['conversionRate'] = $data['sessions'] == 0 ? 0 : $data['conversions'] / $data['sessions'];
+                        $result[$url]['conversionRate'] = (string) $result[$url]['conversionRate'];
+                        unset($result[$url]['engagementRate']);
+                        unset($result[$url]['conversions']);
+                        unset($result[$url]['sessions']);
+                    }
+                    foreach ($result as $url => $data) {
+                        if (!in_array($url, $urls)) {
+                            $url2 = $url;
+
+                            if (substr($url, -1) === '/') {
+                                $url2 = rtrim($url, "/ ");
+                            } else {
+                                $url2 .= '/';
+                            }
+
+                            if (!in_array($url2, $urls)) {
+                                unset($result[$url]);
+                            }
+                        }
+                    }
                 }
-
-                var_dump($result); die;
             } else {
-                // prepare data for a call
-                $datetime = new DateTime();
-                $datetime = $datetime->modify('-2 days')->format('Y-m-d');
-                $dimensions = ['itemName', 'appVersion'];
-                $metrics = ['totalRevenue', 'averagePurchaseRevenue'];
-
-                // Make an API call.
-                $response = $this->ga->makeGAApiCall($propertyId, $dimensions, $metrics, $datetime);
-
                 $result = [];
-                foreach ($response->getRows() as $row) {
-                    $result[] = $row->getDimensionValues()[0]->getValue() . ' ' . $row->getMetricValues()[0]->getValue() . PHP_EOL;
+                if($project->ua_view_id) {
+                    $metrics = [
+                        ['expression' => "ga:bounceRate", 'alias' => 'bounceRate'],
+                        ['expression' => "ga:transactionsPerSession", 'alias' => 'conversionRate'],
+                        ['expression' => "ga:transactionRevenue", 'alias' => 'revenue'],
+                        ['expression' => "ga:revenuePerTransaction", 'alias' => 'avgOrderValue'],
+                    ];
+                    $result = $this->ga->parseUAResults($this->ga->getReport($project->ua_property_id, $project->ua_view_id, $metrics));
+
+                    foreach ($result as $url => $urlRow) {
+                        if (!in_array($url, $urls)) {
+                            $url2 = $url;
+
+                            if (substr($url, -1) === '/') {
+                                $url2 = rtrim($url, "/ ");
+                            } else {
+                                $url2 .= '/';
+                            }
+
+                            if (!in_array($url2, $urls)) {
+                                unset($result[$url]);
+                            }
+                        }
+                    }
                 }
             }
         } catch (Throwable $e) {
             echo($e->getMessage()); die;
         }
 
-        return response([
-            'result' => $result,
-        ], 200);
+        return $result;
     }
 
-    public function expandGA1()
+    public function saveGaData($result)
+    {
+
+    }
+
+
+    public function expandGSC()
     {
         die('no');
         $client = new Google_Client();

@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use Carbon\Carbon;
 use Google\Analytics\Data\V1beta\BetaAnalyticsDataClient;
 use Google\Analytics\Data\V1beta\DateRange;
 use Google\Analytics\Data\V1beta\Dimension;
+use Google\Analytics\Data\V1beta\DimensionValue;
 use Google\Analytics\Data\V1beta\Metric;
 use Google\Analytics\Data\V1beta\RunReportResponse;
 use Google\ApiCore\ApiException;
@@ -29,6 +31,7 @@ class GoogleAnalyticsService
     public $accountId = '109167922';
     const ADMIN_API_KEY = 'AIzaSyDz-VL6KUrc7sw1JtZG7oNJYJfxT6fJxio';
     const SERVICE_ACCOUNT = 'starting-account-bfkqmhlvx8j0';
+    const PAGE_DIMENSION = 'ga:pagePath';
 
     /**
      * @throws Exception
@@ -147,32 +150,15 @@ class GoogleAnalyticsService
 
     /**
      * @param $propertyId
-     * @param $url
-     * @return array
+     * @param $viewId
+     * @return GetReportsResponse
      */
-    public function getReport($propertyId, $url): array
+    public function getReport($propertyId, $viewId, $metrics): GetReportsResponse
     {
-        $profiles = $this->analytics->management_profiles->listManagementProfiles($this->accountId, $propertyId);
-
-        $data = [];
-        foreach ($profiles as $profile) {
-//            var_dump($profile);die;
-           if($profile->websiteUrl == $url) {
-               $data[$profile->name] = $profile->id;
-           }
-        }
-
         // Create the DateRange object.
         $dateRange = new \Google_Service_AnalyticsReporting_DateRange();
-        $dateRange->setStartDate("7daysAgo");
+        $dateRange->setStartDate(Carbon::now()->subMonth(16)->format('Y-m-d'));
         $dateRange->setEndDate("today");
-
-        $metrics = [
-            ['expression' => "ga:bounceRate", 'alias' => 'bounceRate'],
-            ['expression' => "ga:transactionsPerSession", 'alias' => 'conversionRate'],
-            ['expression' => "ga:transactionRevenue", 'alias' => 'revenue'],
-            ['expression' => "ga:revenuePerTransaction", 'alias' => 'avgOrderValue'],
-        ];
 
         // Create the Metrics Data.
         $metricsData = [];
@@ -185,55 +171,80 @@ class GoogleAnalyticsService
             $metricsData[] = $item;
         }
 
-        $dimensions = [
-            ["ga:pagePath"],
-        ];
+        // Create the ReportRequest object.
+        $request = new \Google_Service_AnalyticsReporting_ReportRequest();
+        $request->setViewId($viewId);
+        $request->setDateRanges($dateRange);
+        $request->setMetrics($metricsData);
+        $request->setDimensions(['name' => self::PAGE_DIMENSION]);
 
-        // Create the dimensions Data.
-        $dimensionsData = [];
+        $body = new \Google_Service_AnalyticsReporting_GetReportsRequest();
+        $body->setReportRequests(array($request));
 
-        foreach ($dimensions as $dimension){
-            $item = new \Google\Service\AnalyticsReporting\Dimension();
-            $item->setName($dimension);
-
-            $dimensionsData[] = $item;
-        }
-
-        $result = [];
-
-        foreach ($data as $name => $id) {
-            // Create the ReportRequest object.
-            $request = new \Google_Service_AnalyticsReporting_ReportRequest();
-            $request->setViewId($id);
-            $request->setDateRanges($dateRange);
-            $request->setMetrics($metricsData);
-            $request->setDimensions($dimensionsData);
-
-            $body = new \Google_Service_AnalyticsReporting_GetReportsRequest();
-            $body->setReportRequests(array($request));
-
-            $result[$name] = $this->reportings->reports->batchGet( $body );
-        }
-
-        return $result;
+        return $this->reportings->reports->batchGet( $body );
     }
 
+    /**
+     * @throws \Exception
+     */
     public function parseUAResults(GetReportsResponse $reports): array
     {
         $result = [];
         foreach ($reports as $report) {
             $header = $report->getColumnHeader();
+            $dimensionHeaders = $header->getDimensions();
+            foreach ($dimensionHeaders as $key => $dimensionHeader) {
+                if ($dimensionHeader === self::PAGE_DIMENSION) {
+                    $pageDimensionKey = $key;
+                }
+            }
+
+            if(!isset($pageDimensionKey)) {
+                throw new \Exception('Dimension error');
+            }
+
             $metricHeaders = $header->getMetricHeader()->getMetricHeaderEntries();
             $rows = $report->getData()->getRows();
 
             foreach ($rows as $row) {
                 $metrics = $row->getMetrics();
+                $dimensions = $row->getDimensions();
 
-                foreach ($metrics as $metric) {
-                    foreach ($metric->getValues() as $k => $value) {
-                        $entry = $metricHeaders[$k];
-                        $result[$entry->getName()] = $value;
+                $dimension = $dimensions[$pageDimensionKey];
+
+                if($dimension) {
+                    $item = [];
+                    foreach ($metrics as $metric) {
+                        foreach ($metric->getValues() as $k => $value) {
+                            $entry = $metricHeaders[$k];
+                            $item[$entry->getName()] = $value;
+                        }
                     }
+
+                    $result[$dimension] = $item;
+                }
+            }
+        }
+
+        return $result;
+    }
+
+    public function formatGAResponse($response, $domain)
+    {
+        $result = [];
+        $metricHeaders = $response->getMetricHeaders();
+        $metricNames = [];
+
+        foreach ($metricHeaders as $metricHeader) {
+            $metricNames[] = $metricHeader->getName();
+        }
+
+        foreach ($response->getRows() as $row) {
+            $dimensionValues = $row->getDimensionValues();
+            if(isset($dimensionValues[0]) && $dimensionValues[0] instanceof DimensionValue) {
+                foreach ($row->getMetricValues() as $k => $v) {
+                    $url = rtrim($domain, "/ ") . $dimensionValues[0]->getValue();
+                    $result[$url][$metricNames[$k]] = $v->getValue();
                 }
             }
         }

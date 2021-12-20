@@ -28,6 +28,8 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Client whereName($value)
  * @method static Builder|Client whereUpdatedAt($value)
  * @method static Builder|Client whereUserId($value)
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Project[] $projects
+ * @property-read int|null $projects_count
  */
 class Client extends Model
 {

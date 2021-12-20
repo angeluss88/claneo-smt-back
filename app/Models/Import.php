@@ -26,6 +26,10 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Import whereUpdatedAt($value)
  * @method static Builder|Import whereUserId($value)
  * @mixin Eloquent
+ * @property string $status
+ * @property-read \App\Models\Project $project
+ * @property-read \App\Models\User $user
+ * @method static Builder|Import whereStatus($value)
  */
 class Import extends Model
 {

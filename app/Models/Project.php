@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,6 +29,15 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Project whereId($value)
  * @method static Builder|Project whereUpdatedAt($value)
  * @method static Builder|Project whereUserId($value)
+ * @property string|null $ga_property_id
+ * @property string|null $ua_property_id
+ * @property string|null $ua_view_id
+ * @property-read Client|null $client
+ * @property-read Collection|URL[] $urls
+ * @property-read int|null $urls_count
+ * @method static Builder|Project whereGaPropertyId($value)
+ * @method static Builder|Project whereUaPropertyId($value)
+ * @method static Builder|Project whereUaViewId($value)
  */
 class Project extends Model
 {
@@ -41,6 +51,9 @@ class Project extends Model
     protected $fillable = [
         'domain',
         'user_id',
+        'ga_property_id',
+        'ua_property_id',
+        'ua_view_id',
     ];
 
     /**

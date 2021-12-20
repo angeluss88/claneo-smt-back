@@ -60,6 +60,9 @@ use Laravel\Sanctum\PersonalAccessToken;
  * @property-read int|null $domain_count
  * @property-read Collection|Project[] $projects
  * @property-read int|null $projects_count
+ * @property-read Collection|\App\Models\Event[] $events
+ * @property-read int|null $events_count
+ * @method static Builder|User whereIsSuperadmin($value)
  */
 class User extends Authenticatable
 {

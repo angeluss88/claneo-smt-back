@@ -75,4 +75,37 @@ class ProjectResource
      */
     public $updated_at;
 
+    /**
+     * @OA\Property(
+     *     title="ga_property_id",
+     *     description="ga_property_id",
+     *     example="null"
+     * )
+     *
+     * @var string
+     */
+    public $ga_property_id;
+
+    /**
+     * @OA\Property(
+     *     title="ua_property_id",
+     *     description="ua_property_id",
+     *     example="null"
+     * )
+     *
+     * @var string
+     */
+    public $ua_property_id;
+
+    /**
+     * @OA\Property(
+     *     title="ua_view_id",
+     *     description="ua_view_id",
+     *     example="null"
+     * )
+     *
+     * @var string
+     */
+    public $ua_view_id;
+
 }

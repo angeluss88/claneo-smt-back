@@ -217,11 +217,17 @@ class ProjectController extends Controller
         $fields = $request->validate([
             'domain' => 'required|unique:projects,domain|string|max:255',
             'user_id' => 'required_without:client|exists:users,id',
-            'client' => 'required_without:user_id|exists:clients,name',
+            'client' => 'exists:clients,name',
+            'ga_property_id' => 'max:20',
+            'ua_property_id' => 'max:20',
+            'ua_view_id' => 'max:20',
         ]);
 
         $project = Project::create([
             'domain' => $fields['domain'],
+            'ga_property_id' => $fields['ga_property_id'],
+            'ua_property_id' => $fields['ua_property_id'],
+            'ua_view_id' => $fields['ua_view_id'],
             'user_id' => $fields['user_id'] ?? Client::with('user')->where('name', $fields['client'])->first()->user->id,
         ]);
 
@@ -338,12 +344,17 @@ class ProjectController extends Controller
             ],
             'user_id' => 'exists:users,id',
             'client' => 'exists:clients,name',
+            'ga_property_id' => 'max:20',
+            'ua_property_id' => 'max:20',
+            'ua_view_id' => 'max:20',
         ]);
 
-        $project->fill([
-            'domain' =>  $fields['domain'],
-            'user_id' => $fields['user_id'] ?? Client::with('user')->where('name', $fields['client'])->first()->user->id,
-        ])->save();
+        $project->fill($fields)->save();
+        if (isset($fields['client'])) {
+            $project->user_id = Client::with('user')->where('name', $fields['client'])->first()->user->id;
+        }
+        $project->save();
+
 
         return response([
             'project' => $project,
