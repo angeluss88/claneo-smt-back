@@ -608,7 +608,7 @@ class ImportStrategyController extends Controller
 
     /**
      * @OA\Get(
-     *      path="/expandGA",
+     *      path="/expandGA/{project}",
      *      operationId="expandGA",
      *      tags={"Content Strategy"},
      *      summary="Expand GA Data (test mode, in progress...)",
@@ -621,15 +621,22 @@ class ImportStrategyController extends Controller
      *          response=401,
      *          description="Unauthenticated",
      *      ),
+     *     @OA\Parameter(
+     *         name="project",
+     *         in="path",
+     *         description="The project id",
+     *         required=true,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
      *      security={
      *       {"bearerAuth": {}},
      *     },
      *     )
      */
-    public function expandGA()
+    public function expandGA(Request $request, Project $project)
     {
-        $project = Project::find(14);
-
         $urls = [];
         foreach ($project->urls as $url){
             $urls[] = $url->url ;
@@ -639,9 +646,7 @@ class ImportStrategyController extends Controller
             if($project->ga_property_id) {
                 $dimensions = ['pagePath'];
                 $metrics = ['totalRevenue', 'averagePurchaseRevenue', 'engagementRate', 'conversions', 'sessions'];
-
                 $response = $this->ga->makeGAApiCall($project->ga_property_id, $dimensions, $metrics, '2020-08-20');
-
                 $result = $this->ga->formatGAResponse($response, $project->domain);
 
                 if(!empty($result)) {
@@ -704,12 +709,6 @@ class ImportStrategyController extends Controller
 
         return $result;
     }
-
-    public function saveGaData($result)
-    {
-
-    }
-
 
     public function expandGSC()
     {
