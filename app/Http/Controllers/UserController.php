@@ -296,7 +296,7 @@ class UserController extends Controller
             $client = Client::whereName($fields['client'])->firstOrFail();
         }
 
-        if(!$client && $client->user_id) {  //@TODO discuss this case
+        if($client && $client->user_id) {  //@TODO discuss this case
             return response(['message' => 'This Company is already assigned to another user'], 422);
         }
 
