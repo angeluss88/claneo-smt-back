@@ -19,6 +19,10 @@ use Google\Service\AnalyticsReporting\GetReportsResponse;
 use Google_Client;
 use Google_Service_Analytics;
 use Google_Service_AnalyticsReporting;
+use Google_Service_AnalyticsReporting_DateRange;
+use Google_Service_AnalyticsReporting_GetReportsRequest;
+use Google_Service_AnalyticsReporting_Metric;
+use Google_Service_AnalyticsReporting_ReportRequest;
 
 class GoogleAnalyticsService
 {
@@ -29,7 +33,6 @@ class GoogleAnalyticsService
     public $scopes = ['https://www.googleapis.com/auth/analytics.readonly'];
     public $appName = "Hello Analytics Reporting";
     public $accountId = '109167922';
-    const ADMIN_API_KEY = 'AIzaSyDz-VL6KUrc7sw1JtZG7oNJYJfxT6fJxio';
     const SERVICE_ACCOUNT = 'starting-account-bfkqmhlvx8j0';
     const PAGE_DIMENSION = 'ga:pagePath';
 
@@ -151,12 +154,13 @@ class GoogleAnalyticsService
     /**
      * @param $propertyId
      * @param $viewId
+     * @param $metrics
      * @return GetReportsResponse
      */
     public function getReport($propertyId, $viewId, $metrics): GetReportsResponse
     {
         // Create the DateRange object.
-        $dateRange = new \Google_Service_AnalyticsReporting_DateRange();
+        $dateRange = new Google_Service_AnalyticsReporting_DateRange();
         $dateRange->setStartDate(Carbon::now()->subMonth(16)->format('Y-m-d'));
         $dateRange->setEndDate("today");
 
@@ -164,7 +168,7 @@ class GoogleAnalyticsService
         $metricsData = [];
 
         foreach ($metrics as $metric){
-            $item = new \Google_Service_AnalyticsReporting_Metric();
+            $item = new Google_Service_AnalyticsReporting_Metric();
             $item->setExpression($metric['expression']);
             $item->setAlias($metric['alias']);
 
@@ -172,13 +176,13 @@ class GoogleAnalyticsService
         }
 
         // Create the ReportRequest object.
-        $request = new \Google_Service_AnalyticsReporting_ReportRequest();
+        $request = new Google_Service_AnalyticsReporting_ReportRequest();
         $request->setViewId($viewId);
         $request->setDateRanges($dateRange);
         $request->setMetrics($metricsData);
         $request->setDimensions(['name' => self::PAGE_DIMENSION]);
 
-        $body = new \Google_Service_AnalyticsReporting_GetReportsRequest();
+        $body = new Google_Service_AnalyticsReporting_GetReportsRequest();
         $body->setReportRequests(array($request));
 
         return $this->reportings->reports->batchGet( $body );
@@ -229,7 +233,7 @@ class GoogleAnalyticsService
         return $result;
     }
 
-    public function formatGAResponse($response, $domain)
+    public function formatGAResponse($response, $domain): array
     {
         $result = [];
         $metricHeaders = $response->getMetricHeaders();

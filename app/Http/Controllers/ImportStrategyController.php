@@ -8,17 +8,17 @@ use App\Models\Project;
 use App\Models\URL;
 use App\Services\GoogleAnalyticsService;
 use Auth;
-use DateTime;
-use Google\Analytics\Data\V1beta\DimensionValue;
-use Google\ApiCore\ApiException;
-use Google\ApiCore\ValidationException;
-use Google\Service\Drive;
+use Carbon\Carbon;
+use Exception;
 use Google_Client;
+use Google_Service_Webmasters;
+use Google_Service_Webmasters_SearchAnalyticsQueryRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Throwable;
+use Validator;
 
 class ImportStrategyController extends Controller
 {
@@ -307,186 +307,231 @@ class ImportStrategyController extends Controller
      *
      * @param Request $request
      * @return JsonResponse
+     * @throws Exception
      */
     public function import(Request $request): JsonResponse
     {
-        $validator = \Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), [
             'file' => 'required|file',
             'project_id' => 'required|integer|exists:projects,id',
         ]);
+
+        $urlsToExpand = [];
+        $keywordsToExpand = [];
 
         if ($validator->fails()) {
             return response()->json($validator->errors(), 400);
         }
 
-        $project = Project::findOrFail($request->get('project_id'));
-        $path = $request->file('file')->getRealPath();
-        $csv = $this->parseCsv($path, ';', 2);
+        try {
+            $project = Project::findOrFail($request->get('project_id'));
+            $path = $request->file('file')->getRealPath();
+            $csv = $this->parseCsv($path, ';', 2);
 
-        if (empty($csv)) {
-            $csv = $this->parseCsv($path, ',', 2);
-        }
+            if (isset($csv[0]) && (count($csv[0]) < 3)) {
+                $csv = $this->parseCsv($path, ',', 2);
+            }
 
-        $headers = empty($csv) ? [] : array_flip(array_shift($csv));
+            $headers = empty($csv) ? [] : array_flip(array_shift($csv));
 
-        $keys = $this->getKeys($project, $headers);
+            $keys = $this->getKeys($project, $headers);
 
-        // empty keys mean that we don't have any of field name: field_de, field_en or *field_en
-        if (empty($keys)) {
-            return response()->json([
-                'attribute' => 'URL',
-                'error_message' => 'this field is required',
-            ], 422);
-        }
-
-        $required_fields = ['url', 'status', 'main_category', 'keyword', 'search_volume'];
-
-        foreach ($required_fields as $required_field) {
-            if (!isset($headers[$keys[$required_field]])){
+            // empty keys mean that we don't have any of field name: field_de, field_en or *field_en
+            if (empty($keys)) {
                 return response()->json([
-                    'attribute' => $keys[$required_field],
-                    'error_message' => 'this column is required',
+                    'attribute' => 'URL',
+                    'error_message' => 'this field is required',
                 ], 422);
             }
-        }
 
-        // there could be different current_ranking_position columns names, we should check them all
-        if(isset($headers[$keys['current_ranking_position']])) {
-            $current_ranking_position_key = 'current_ranking_position';
-        } else if(isset($headers[$keys['current_ranking_position2']])) {
-            $current_ranking_position_key = 'current_ranking_position2';
-        } else if(isset($headers[$keys['current_ranking_position3']])) {
-            $current_ranking_position_key = 'current_ranking_position3';
-        } else {
-            return response()->json([
-                'attribute' => $keys['current_ranking_position'],
-                'error_message' => 'this column is required',
-            ], 422);
-        }
+            $required_fields = ['url', 'status', 'main_category', 'keyword', 'search_volume'];
 
-        $urls = []; // urls array to do mass insert after parsing. keywords will be an array of URL
-        $keywords = []; // keywords. format ['url' => [['keyword1'], ['keyword2'],]
-        $url_to_keywords = []; // array to keep many-to-many for urls-keys
-        $failed_rows = []; // any errors during parsing
-
-        // begin parsing process
-        foreach ($csv as $row_number => $row) {
-            $url = [];
-            $keyword = [];
-
-            // begin validation process
-            // if we don't have any of required fields - stop parse this row and add item to failed rows
             foreach ($required_fields as $required_field) {
-                if(!$row[$headers[$keys[$required_field]]] && $row[$headers[$keys[$required_field]]] !== "0") {
-                    $failed_rows[] = [
-                        'row' => $row_number,
+                if (!isset($headers[$keys[$required_field]])) {
+                    return response()->json([
                         'attribute' => $keys[$required_field],
-                        'error_message' => 'this field is required',
-                    ];
-                    continue 2;
+                        'error_message' => 'this column is required',
+                    ], 422);
                 }
             }
 
-            // custom checking of current_ranking_position - it have several cases of name
-            if( !$row[$headers[$keys[$current_ranking_position_key]]] ) {
-                $failed_rows[] = [
-                    'row' => $row_number,
+            // there could be different current_ranking_position columns names, we should check them all
+            if (isset($headers[$keys['current_ranking_position']])) {
+                $current_ranking_position_key = 'current_ranking_position';
+            } else if (isset($headers[$keys['current_ranking_position2']])) {
+                $current_ranking_position_key = 'current_ranking_position2';
+            } else if (isset($headers[$keys['current_ranking_position3']])) {
+                $current_ranking_position_key = 'current_ranking_position3';
+            } else {
+                return response()->json([
                     'attribute' => $keys['current_ranking_position'],
-                    'error_message' => 'this field is required',
-                ];
-                continue;
-            }
-            // end validation process
-
-            // create keyword item form row
-            $keyword['keyword'] = $row[$headers[$keys['keyword']]];
-            $keyword['search_volume'] = (int) $row[$headers[$keys['search_volume']]];
-            $keyword['search_volume_clustered'] = isset($headers[$keys['sv_clustered']]) ? $row[$headers[$keys['sv_clustered']]] : null;
-            $keyword['search_volume_clustered'] = (int) $keyword['search_volume_clustered'];
-
-            $keyword['current_ranking_url'] = $headers[$keys['current_ranking_url']] ? $row[$headers[$keys['current_ranking_url']]] : null;
-
-            $keyword['featured_snippet_keyword'] = isset($headers[$keys['featured_snippet_kw']]) ? $row[$headers[$keys['featured_snippet_kw']]] : null;
-            $keyword['featured_snippet_keyword'] = strtolower($keyword['featured_snippet_keyword']);
-            $keyword['featured_snippet_keyword'] = str_replace('ja', 'yes', $keyword['featured_snippet_keyword']);
-            $keyword['featured_snippet_keyword'] = str_replace('nein', 'no', $keyword['featured_snippet_keyword']);
-
-            $keyword['featured_snippet_owned'] = isset($headers[$keys['featured_snippet_owned']]) ? $row[$headers[$keys['featured_snippet_owned']]] : null;
-            $keyword['featured_snippet_owned'] = strtolower($keyword['featured_snippet_owned']);
-            $keyword['featured_snippet_owned'] = str_replace('ja', 'yes', $keyword['featured_snippet_owned']);
-            $keyword['featured_snippet_owned'] = str_replace('nein', 'no', $keyword['featured_snippet_owned']);
-
-            $keyword['current_ranking_position'] = $row[$headers[$keys[$current_ranking_position_key]]];
-            $keyword['current_ranking_position'] = str_replace('Nicht', 'Not', $keyword['current_ranking_position']);
-            $keyword['current_ranking_position'] = str_replace('nicht', 'Not', $keyword['current_ranking_position']);
-
-            $keyword['search_intention'] = isset($headers[$keys['search_intention']]) ? $row[$headers[$keys['search_intention']]] : null;
-            if($keyword['search_intention']) {
-                $keyword['search_intention'] = strtolower($keyword['search_intention']);
-                $keyword['search_intention'] = str_replace('transaktional', 'transactional', $keyword['search_intention']);
+                    'error_message' => 'this column is required',
+                ], 422);
             }
 
-            // add keyword item to keywords array by keyword key (the same keywords will be the same item)
-            $keywords[$row[$headers[$keys['keyword']]]] = $keyword;
+            $urls = []; // urls array to do mass insert after parsing. keywords will be an array of URL
+            $keywords = []; // keywords. format ['url' => [['keyword1'], ['keyword2'],]
+            $url_to_keywords = []; // array to keep many-to-many for urls-keys
+            $failed_rows = []; // any errors during parsing
 
-            // create URL item from row
-            $url['url'] = $row[$headers[$keys['url']]];
-            $url['status'] = $row[$headers[$keys['status']]];
-            $url['status'] = str_replace('NEU', 'NEW', $url['status']);
-            $url['main_category'] = $row[$headers[$keys['main_category']]];
-            $url['project_id'] = $project->id;
-            $url['page_type'] = isset($headers[$keys['page_type']]) ? $row[$headers[$keys['page_type']]] : null;
-            $url['sub_category'] = isset($headers[$keys['sub_category_1']]) ? $row[$headers[$keys['sub_category_1']]] : null;
-            $url['sub_category2'] = isset($headers[$keys['sub_category_2']]) ? $row[$headers[$keys['sub_category_2']]] : null;
-            $url['sub_category3'] = isset($headers[$keys['sub_category_3']]) ? $row[$headers[$keys['sub_category_3']]] : null;
-            $url['sub_category4'] = isset($headers[$keys['sub_category_4']]) ? $row[$headers[$keys['sub_category_4']]] : null;
-            $url['sub_category5'] = isset($headers[$keys['sub_category_5']]) ? $row[$headers[$keys['sub_category_5']]] : null;
+            // begin parsing process
+            foreach ($csv as $row_number => $row) {
+                $url = [];
+                $keyword = [];
 
-            // add url item to $urls by url key (the same urls will be the same item)
-            $urls[$row[$headers[$keys['url']]]] = $url;
+                // begin validation process
+                // if we don't have any of required fields - stop parse this row and add item to failed rows
+                foreach ($required_fields as $required_field) {
+                    if (!$row[$headers[$keys[$required_field]]] && $row[$headers[$keys[$required_field]]] !== "0") {
+                        $failed_rows[] = [
+                            'row' => $row_number,
+                            'attribute' => $keys[$required_field],
+                            'error_message' => 'this field is required',
+                        ];
+                        continue 2;
+                    }
+                }
 
-            // add urls-to-keys relation  item
-            $url_to_keywords[$url['url']][$keyword['keyword']] = $keyword['keyword'];
+                // custom checking of current_ranking_position - it has several cases of name
+                if (!$row[$headers[$keys[$current_ranking_position_key]]]) {
+                    $failed_rows[] = [
+                        'row' => $row_number,
+                        'attribute' => $keys['current_ranking_position'],
+                        'error_message' => 'this field is required',
+                    ];
+                    continue;
+                }
+                // end validation process
+
+                // create keyword item form row
+                $keyword['keyword'] = $row[$headers[$keys['keyword']]];
+                $keyword['search_volume'] = (int)$row[$headers[$keys['search_volume']]];
+                $keyword['search_volume_clustered'] = isset($headers[$keys['sv_clustered']]) ? $row[$headers[$keys['sv_clustered']]] : null;
+                $keyword['search_volume_clustered'] = (int)$keyword['search_volume_clustered'];
+
+                $keyword['current_ranking_url'] = $headers[$keys['current_ranking_url']] ? $row[$headers[$keys['current_ranking_url']]] : null;
+
+                $keyword['featured_snippet_keyword'] = isset($headers[$keys['featured_snippet_kw']]) ? $row[$headers[$keys['featured_snippet_kw']]] : null;
+                $keyword['featured_snippet_keyword'] = strtolower($keyword['featured_snippet_keyword']);
+                $keyword['featured_snippet_keyword'] = str_replace('ja', 'yes', $keyword['featured_snippet_keyword']);
+                $keyword['featured_snippet_keyword'] = str_replace('nein', 'no', $keyword['featured_snippet_keyword']);
+
+                $keyword['featured_snippet_owned'] = isset($headers[$keys['featured_snippet_owned']]) ? $row[$headers[$keys['featured_snippet_owned']]] : null;
+                $keyword['featured_snippet_owned'] = strtolower($keyword['featured_snippet_owned']);
+                $keyword['featured_snippet_owned'] = str_replace('ja', 'yes', $keyword['featured_snippet_owned']);
+                $keyword['featured_snippet_owned'] = str_replace('nein', 'no', $keyword['featured_snippet_owned']);
+
+                $keyword['current_ranking_position'] = $row[$headers[$keys[$current_ranking_position_key]]];
+                $keyword['current_ranking_position'] = str_replace('Nicht', 'Not', $keyword['current_ranking_position']);
+                $keyword['current_ranking_position'] = str_replace('nicht', 'Not', $keyword['current_ranking_position']);
+
+                $keyword['search_intention'] = isset($headers[$keys['search_intention']]) ? $row[$headers[$keys['search_intention']]] : null;
+                if ($keyword['search_intention']) {
+                    $keyword['search_intention'] = strtolower($keyword['search_intention']);
+                    $keyword['search_intention'] = str_replace('transaktional', 'transactional', $keyword['search_intention']);
+                }
+
+                // add keyword item to keywords array by keyword key (the same keywords will be the same item)
+                $keywords[$row[$headers[$keys['keyword']]]] = $keyword;
+                $keywordsToExpand[] = $keyword['keyword'];
+
+                // create URL item from row
+                $url['url'] = $row[$headers[$keys['url']]];
+                $url['status'] = $row[$headers[$keys['status']]];
+                $url['status'] = str_replace('NEU', 'NEW', $url['status']);
+                $url['main_category'] = $row[$headers[$keys['main_category']]];
+                $url['project_id'] = $project->id;
+                $url['page_type'] = isset($headers[$keys['page_type']]) ? $row[$headers[$keys['page_type']]] : null;
+                $url['sub_category'] = isset($headers[$keys['sub_category_1']]) ? $row[$headers[$keys['sub_category_1']]] : null;
+                $url['sub_category2'] = isset($headers[$keys['sub_category_2']]) ? $row[$headers[$keys['sub_category_2']]] : null;
+                $url['sub_category3'] = isset($headers[$keys['sub_category_3']]) ? $row[$headers[$keys['sub_category_3']]] : null;
+                $url['sub_category4'] = isset($headers[$keys['sub_category_4']]) ? $row[$headers[$keys['sub_category_4']]] : null;
+                $url['sub_category5'] = isset($headers[$keys['sub_category_5']]) ? $row[$headers[$keys['sub_category_5']]] : null;
+
+                $urlsToExpand[] = $url['url'];
+
+                // add url item to $urls by url key (the same urls will be the same item)
+                $urls[$row[$headers[$keys['url']]]] = $url;
+
+                // add urls-to-keys relation  item
+                $url_to_keywords[$url['url']][$keyword['keyword']] = $keyword['keyword'];
+            }
+            // end parsing process
+
+            // if we have fails during parsing - return all the errors
+            if (!empty($failed_rows)) {
+                return response()->json([$failed_rows], 422);
+            }
+
+            // if we don't have errors - create entities
+            // create Import item to have import_id
+            $import = Import::create([
+                'user_id' => Auth::id(),
+                'project_id' => $project->id,
+            ]);
+
+            foreach ($urls as $k => $value) {
+                $urls[$k]['import_id'] = $import->id;
+            }
+
+            foreach ($keywords as $k => $value) {
+                $keywords[$k]['import_id'] = $import->id;
+            }
+
+            // save all prepared urls from $urls
+            URL::upsert(array_values($urls), ['url']);
+
+            //save all prepared keyword from $keywords
+            Keyword::upsert(array_values($keywords), ['keyword']);
+
+            foreach ($url_to_keywords as $url => $keywords) {
+                $kw_collection = Keyword::whereIn('keyword', $keywords)->get('id');
+
+                URL::where('url', $url)->first()->keywords()->syncWithoutDetaching($kw_collection);
+            }
+
+            // set import status to complete
+            $import->status = Import::STATUS_COMPLETE;
+            $import->save();
+
+            $result = $this->expandGA($project, $urlsToExpand);
+            foreach ($result as $url => $data) {
+                $model = URL::whereUrl($url)->firstOrFail();
+                if ($model) {
+                    $model->fill($data)->save();
+                }
+            }
+
+            $result = $this->expandGSC($urlsToExpand);
+
+            foreach ($result as $url => $data) {
+                $model = URL::whereUrl($url)->first();
+
+                if ($model) {
+                    $keys = $data['keys'];
+                    unset($data['keys']);
+
+                    foreach ($keys as $key) {
+                        if (in_array($key, $keywordsToExpand)) {
+                            $keyword = Keyword::whereKeyword($key)->first();
+
+                            if ($keyword) {
+                                $model->keywords()->updateExistingPivot($keyword->id, $data);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Throwable $e) {
+            var_dump($e->getMessage());
         }
-        // end parsing process
 
-        // if we have fails during parsing - return all the errors
-        if(!empty($failed_rows)) {
-            return response()->json([$failed_rows], 422);
+        $return = [];
+        if(isset($import)) {
+            $return['import_id'] = $import->id;
         }
 
-        // if we don't have errors - create entities
-        // create Import item to have import_id
-        $import = Import::create([
-            'user_id' => Auth::id(),
-            'project_id' => $project->id,
-        ]);
-
-        foreach ($urls as $k => $value) {
-            $urls[$k]['import_id'] = $import->id;
-        }
-
-        foreach ($keywords as $k => $value) {
-            $keywords[$k]['import_id'] = $import->id;
-        }
-
-        // save all prepared urls from $urls
-        URL::upsert(array_values($urls), ['url']);
-
-        //save all prepared keyword from $keywords
-        Keyword::upsert(array_values($keywords), ['keyword']);
-
-        foreach ($url_to_keywords as $url => $keywords) {
-            $kw_collection = Keyword::whereIn('keyword', $keywords)->get('id');
-
-            URL::where('url', $url)->first()->keywords()->syncWithoutDetaching($kw_collection);
-        }
-
-        // set import status to complete
-        $import->status = Import::STATUS_COMPLETE;
-        $import->save();
-
-        return response()->json(['import_id' => $import->id,], 201);
+        return response()->json($return, 201);
     }
 
     /**
@@ -586,7 +631,7 @@ class ImportStrategyController extends Controller
      * @param false $stop - to prevent wrong parsing
      * @return array - array of parsed rows
      */
-    public function parseCsv($path, $s = ';', $stop = false): array
+    public function parseCsv($path, string $s = ';', bool $stop = false): array
     {
         $csv = [];
         $row = 1;
@@ -607,54 +652,37 @@ class ImportStrategyController extends Controller
     }
 
     /**
-     * @OA\Get(
-     *      path="/expandGA/{project}",
-     *      operationId="expandGA",
-     *      tags={"Content Strategy"},
-     *      summary="Expand GA Data (test mode, in progress...)",
-     *      description="Returns expanded GA data",
-     *      @OA\Response(
-     *          response=200,
-     *          description="Successful operation",
-     *       ),
-     *      @OA\Response(
-     *          response=401,
-     *          description="Unauthenticated",
-     *      ),
-     *     @OA\Parameter(
-     *         name="project",
-     *         in="path",
-     *         description="The project id",
-     *         required=true,
-     *         @OA\Schema(
-     *             type="integer",
-     *         )
-     *     ),
-     *      security={
-     *       {"bearerAuth": {}},
-     *     },
-     *     )
+     * @param Project $project
+     * @param array $urls
+     * @return array
+     * @throws Exception
      */
-    public function expandGA(Request $request, Project $project)
+    public function expandGA(Project $project, array $urls): array
     {
-        $urls = [];
-        foreach ($project->urls as $url){
-            $urls[] = $url->url ;
-        }
-
         try {
             if($project->ga_property_id) {
                 $dimensions = ['pagePath'];
                 $metrics = ['totalRevenue', 'averagePurchaseRevenue', 'engagementRate', 'conversions', 'sessions'];
-                $response = $this->ga->makeGAApiCall($project->ga_property_id, $dimensions, $metrics, '2020-08-20');
+                $response = $this->ga->makeGAApiCall($project->ga_property_id, $dimensions, $metrics, Carbon::now()->subMonth(16)->format('Y-m-d'));
                 $result = $this->ga->formatGAResponse($response, $project->domain);
 
                 if(!empty($result)) {
                     foreach ($result as $url => $data) {
-                        $result[$url]['bounceRate'] = 1 - $data['engagementRate'];
-                        $result[$url]['bounceRate'] = (string) $result[$url]['bounceRate'];
-                        $result[$url]['conversionRate'] = $data['sessions'] == 0 ? 0 : $data['conversions'] / $data['sessions'];
-                        $result[$url]['conversionRate'] = (string) $result[$url]['conversionRate'];
+                        $result[$url]['bounce_rate'] = 1 - $data['engagementRate'];
+                        $result[$url]['bounce_rate'] = (string) $result[$url]['bounce_rate'];
+                        $result[$url]['ecom_conversion_rate'] = $data['sessions'] == 0 ? 0 : $data['conversions'] / $data['sessions'];
+                        $result[$url]['ecom_conversion_rate'] = (string) $result[$url]['ecom_conversion_rate'];
+
+                        if(isset($result[$url]['totalRevenue'])) {
+                            $result[$url]['revenue'] = $result[$url]['totalRevenue'];
+                            unset($result[$url]['totalRevenue']);
+                        }
+
+                        if(isset($result[$url]['averagePurchaseRevenue'])) {
+                            $result[$url]['avg_order_value'] = $result[$url]['averagePurchaseRevenue'];
+                            unset($result[$url]['averagePurchaseRevenue']);
+                        }
+
                         unset($result[$url]['engagementRate']);
                         unset($result[$url]['conversions']);
                         unset($result[$url]['sessions']);
@@ -704,26 +732,56 @@ class ImportStrategyController extends Controller
                 }
             }
         } catch (Throwable $e) {
-            echo($e->getMessage()); die;
+            throw new Exception($e->getMessage());
         }
 
         return $result;
     }
 
-    public function expandGSC()
+    /**
+     * @param $urls
+     * @return array
+     * @throws Exception
+     */
+    public function expandGSC($urls): array
     {
-        die('no');
-        $client = new Google_Client();
-        $client->setApplicationName('"Hello Analytics Reporting"');
-        $client->setAuthConfig(config_path() . DIRECTORY_SEPARATOR . 'credentials.json');
-        $client->addScope('https://www.googleapis.com/auth/analytics.readonly');
+        try {
+            $result = [];
 
-        // returns a Guzzle HTTP Client
-        $httpClient = $client->authorize();
+            $client = new Google_Client();
+            $client->setApplicationName('"Hello Analytics Reporting"');
+            $client->setAuthConfig(config_path() . DIRECTORY_SEPARATOR . 'credentials.json');
+            $client->addScope('https://www.googleapis.com/auth/webmasters');
 
-        // make an HTTP request
-        $response = $httpClient->get('https://www.googleapis.com/plus/v1/people/me');
+            $serviceWebmasters = new Google_Service_Webmasters( $client );
 
-        var_dump($response->getBody());
+            if(is_countable($serviceWebmasters->sites->listSites()->getSiteEntry())) {
+                foreach ($serviceWebmasters->sites->listSites()->getSiteEntry() as $site) {
+                    if(in_array($site->getSiteUrl(), $urls)) {
+                        $postBody = new Google_Service_Webmasters_SearchAnalyticsQueryRequest( [
+                            'startDate'  => Carbon::now()->subMonth(16)->format('Y-m-d'),
+                            'endDate'    => Carbon::now()->format('Y-m-d'),
+                            'dimensions' => [
+                                'page',
+                            ],
+                        ] );
+
+                        $searchAnalyticsResponse = $serviceWebmasters->searchanalytics->query($site->getSiteUrl(), $postBody);
+
+                        foreach ($searchAnalyticsResponse->getRows() as $row) {
+                            $result[$site->getSiteUrl()]['clicks'] = $row->getClicks();
+                            $result[$site->getSiteUrl()]['impressions'] = $row->getImpressions();
+                            $result[$site->getSiteUrl()]['ctr'] = $row->getCtr();
+                            $result[$site->getSiteUrl()]['position'] = $row->getPosition();
+                            $result[$site->getSiteUrl()]['keys'] = $row->getKeys();
+                        }
+                    }
+                }
+            }
+        } catch(Exception $e ) {
+            throw new Exception($e->getMessage());
+        }
+
+        return $result;
     }
 }
