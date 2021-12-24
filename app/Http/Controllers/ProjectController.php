@@ -225,9 +225,9 @@ class ProjectController extends Controller
 
         $project = Project::create([
             'domain' => $fields['domain'],
-            'ga_property_id' => $fields['ga_property_id'],
-            'ua_property_id' => $fields['ua_property_id'],
-            'ua_view_id' => $fields['ua_view_id'],
+            'ga_property_id' => $fields['ga_property_id'] ?? '',
+            'ua_property_id' => $fields['ua_property_id'] ?? '',
+            'ua_view_id' => $fields['ua_view_id'] ?? '',
             'user_id' => $fields['user_id'] ?? Client::with('user')->where('name', $fields['client'])->first()->user->id,
         ]);
 
