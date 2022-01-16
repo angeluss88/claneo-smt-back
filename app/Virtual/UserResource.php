@@ -117,14 +117,4 @@ class UserResource
      * )
      */
     public $client;
-
-    /**
-     * @OA\Property(
-     *     title="projects",
-     *     type="array",
-     *     collectionFormat="multi",
-     *     @OA\Items(ref="#/components/schemas/ProjectResource")
-     * )
-     */
-    public $projects;
 }

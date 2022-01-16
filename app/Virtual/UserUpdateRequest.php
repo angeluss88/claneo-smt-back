@@ -65,4 +65,15 @@ class UserUpdateRequest
      * @var string
      */
     public $roles;
+
+    /**
+     * @OA\Property(
+     *     title="client_id",
+     *     description="ID of Client to assign",
+     *     example=0,
+     * )
+     *
+     * @var integer
+     */
+    public $client_id;
 }

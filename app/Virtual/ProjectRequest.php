@@ -24,8 +24,19 @@ class ProjectRequest
 
     /**
      * @OA\Property(
+     *     title="client_id",
+     *     description="Client id to assign",
+     *     example=1,
+     * )
+     *
+     * @var integer
+     */
+    public $client_id;
+
+    /**
+     * @OA\Property(
      *     title="client",
-     *     description="CLient name to assign",
+     *     description="Client name to assign",
      *     example="Company",
      * )
      *

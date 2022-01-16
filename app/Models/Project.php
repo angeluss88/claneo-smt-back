@@ -18,10 +18,9 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Project newQuery()
  * @method static Builder|Project query()
  * @mixin Eloquent
- * @property-read User $user
  * @property int $id
  * @property string $domain
- * @property int|null $user_id
+ * @property int|null $client_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @method static Builder|Project whereCreatedAt($value)
@@ -50,7 +49,7 @@ class Project extends Model
      */
     protected $fillable = [
         'domain',
-        'user_id',
+        'client_id',
         'ga_property_id',
         'ua_property_id',
         'ua_view_id',
@@ -59,17 +58,9 @@ class Project extends Model
     /**
      * @return BelongsTo
      */
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
-    }
-
-    /**
-     * @return BelongsTo
-     */
     public function client(): BelongsTo
     {
-        return $this->belongsTo(Client::class, 'user_id', 'user_id');
+        return $this->belongsTo(Client::class);
     }
 
     /**

@@ -7,6 +7,7 @@ use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -32,6 +33,7 @@ use Laravel\Sanctum\PersonalAccessToken;
  * @property string|null $remember_token
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property int|null $client_id
  * @property-read DatabaseNotificationCollection|DatabaseNotification[] $notifications
  * @property-read int|null $notifications_count
  * @property-read Collection|PersonalAccessToken[] $tokens
@@ -56,11 +58,7 @@ use Laravel\Sanctum\PersonalAccessToken;
  * @property-read int|null $roles_count
  * @method static Builder|User wherePrivacyPolicyFlag($value)
  * @property-read Client|null $client
- * @property-read Collection|Project[] $domain
- * @property-read int|null $domain_count
- * @property-read Collection|Project[] $projects
- * @property-read int|null $projects_count
- * @property-read Collection|\App\Models\Event[] $events
+ * @property-read Collection|Event[] $events
  * @property-read int|null $events_count
  * @method static Builder|User whereIsSuperadmin($value)
  */
@@ -79,6 +77,7 @@ class User extends Authenticatable
         'email',
         'password',
         'privacy_policy_flag',
+        'client_id',
     ];
 
     /**
@@ -144,26 +143,15 @@ class User extends Authenticatable
      */
     public function hasRole($role): bool
     {
-        if ($this->is_superadmin || $this->roles()->where('name', $role)->first()) {
-            return true;
-        }
-        return false;
+        return !is_null($this->roles()->where('name', $role)->first());
     }
 
     /**
-     * @return HasOne
+     * @return BelongsTo
      */
-    public function client(): HasOne
+    public function client(): BelongsTo
     {
-        return $this->hasOne(Client::class);
-    }
-
-    /**
-     * @return HasMany
-     */
-    public function projects(): HasMany
-    {
-        return $this->hasMany(Project::class);
+        return $this->belongsTo(Client::class);
     }
 
     /**
@@ -172,5 +160,13 @@ class User extends Authenticatable
     public function events(): HasMany
     {
         return $this->hasMany(Event::class);
+    }
+
+    /**
+     * @return HasMany
+     */
+    public function projects(): HasMany
+    {
+        return $this->hasMany(Project::class, 'client_id', 'client_id');
     }
 }

@@ -35,23 +35,23 @@ class ProjectResource
 
     /**
      * @OA\Property(
-     *     title="user_id",
-     *     description="ID of user",
+     *     title="client_id",
+     *     description="ID of client",
      *     example=1,
      * )
      *
      * @var string
      */
-    public $user_id;
+    public $client_id;
 
     /**
      * @OA\Property(
-     *     title="user",
+     *     title="client",
      *     type="object",
-     *     @OA\Schema (ref="#/components/schemas/UserResource")
+     *     @OA\Schema (ref="#/components/schemas/ClientResource")
      * )
      */
-    public $user;
+    public $client;
 
     /**
      * @OA\Property(
@@ -79,7 +79,7 @@ class ProjectResource
      * @OA\Property(
      *     title="ga_property_id",
      *     description="ga_property_id",
-     *     example="null"
+     *     example=""
      * )
      *
      * @var string
@@ -90,7 +90,7 @@ class ProjectResource
      * @OA\Property(
      *     title="ua_property_id",
      *     description="ua_property_id",
-     *     example="null"
+     *     example=""
      * )
      *
      * @var string
@@ -101,7 +101,7 @@ class ProjectResource
      * @OA\Property(
      *     title="ua_view_id",
      *     description="ua_view_id",
-     *     example="null"
+     *     example=""
      * )
      *
      * @var string

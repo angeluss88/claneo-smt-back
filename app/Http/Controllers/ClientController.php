@@ -11,7 +11,7 @@ class ClientController extends Controller
 {
     /**
      * @OA\Get(
-     *     path="/clients?page={page}&count={count}&no_user={no_user}",
+     *     path="/clients?page={page}&count={count}",
      *     operationId="clients_index",
      *     tags={"Clients"},
      *     summary="Client Companies List",
@@ -158,16 +158,6 @@ class ClientController extends Controller
      *             type="integer",
      *         )
      *     ),
-     *     @OA\Parameter(
-     *         name="no_user",
-     *         in="path",
-     *         description="No user id filter(send 'yes' to apply)",
-     *         required=false,
-     *         example="",
-     *         @OA\Schema(
-     *             type="string",
-     *         )
-     *     ),
      *     security={
      *       {"bearerAuth": {}},
      *     },
@@ -180,11 +170,7 @@ class ClientController extends Controller
     {
         $count = $request->count == '{count}' ? 10 : $request->count;
 
-        $clients = Client::with('user', 'projects');
-
-        if($request->no_user === 'yes') {
-            $clients = $clients->whereNull('user_id');
-        }
+        $clients = Client::with('users', 'projects');
 
         return response([
             'clients' => $clients->paginate($count),
@@ -231,7 +217,6 @@ class ClientController extends Controller
     {
         $fields = $request->validate([
             'name' => 'required|unique:clients,name|string|max:100',
-            'user_id' => 'integer',
         ]);
 
         $client = Client::create($fields);
@@ -285,7 +270,7 @@ class ClientController extends Controller
     public function show(Client $client): Response
     {
         return response([
-            'client' => Client::with(['user'])->find($client->id),
+            'client' => Client::with(['users', 'projects',])->find($client->id),
         ], 200);
     }
 
@@ -347,7 +332,6 @@ class ClientController extends Controller
                 'max:255',
                 Rule::unique('clients')->ignore($client->id),
             ],
-            'user_id' => 'integer',
         ]);
 
         $client->fill($fields)->save();

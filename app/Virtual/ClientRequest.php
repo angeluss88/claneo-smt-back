@@ -21,15 +21,4 @@ class ClientRequest
      * @var string
      */
     public $name;
-
-    /**
-     * @OA\Property(
-     *     title="description",
-     *     description="ID of user to assign",
-     *     example="2",
-     * )
-     *
-     * @var integer
-     */
-    public $user_id;
 }

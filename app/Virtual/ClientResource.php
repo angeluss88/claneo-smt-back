@@ -57,10 +57,21 @@ class ClientResource
 
     /**
      * @OA\Property(
-     *     title="user",
-     *     type="object",
-     *     @OA\Schema (ref="#/components/schemas/UserResource")
+     *     title="users",
+     *     type="array",
+     *     collectionFormat="multi",
+     *     @OA\Items(ref="#/components/schemas/UserResource")
      * )
      */
-    public $user;
+    public $users;
+
+    /**
+     * @OA\Property(
+     *     title="projects",
+     *     type="array",
+     *     collectionFormat="multi",
+     *     @OA\Items(ref="#/components/schemas/ProjectResource")
+     * )
+     */
+    public $projects;
 }

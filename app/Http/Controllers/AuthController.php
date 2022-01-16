@@ -63,17 +63,6 @@ class AuthController extends Controller
             'client_id' => 'integer',
         ]);
 
-        $client = null;
-        if(isset($fields['client_id'])) {
-            $client = Client::find($fields['client_id']);
-        } else if(isset($fields['client'])) {
-            $client = Client::whereName($fields['client'])->firstOrFail();
-        }
-
-        if($client && $client->user_id) {  //@TODO discuss this case
-            return response(['message' => 'This Company is already assigned to another user'], 422);
-        }
-
         $fields['password'] = Str::random();
 
         /**
@@ -89,6 +78,23 @@ class AuthController extends Controller
         if(isset($fields['roles']) && !empty($fields['roles'])) {
             $user->roles()->sync($fields['roles']);
             $user->save();
+        }
+
+        if($user->hasRole('Client')) {
+            $client = null;
+            if (isset($fields['client'])) {
+                $client = Client::whereName($fields['client'])->first();
+            }
+
+            if ($client) {
+                $user->client_id = $client->id;
+            } else if(isset($fields['client_id'])) {
+                $user->client_id = $fields['client_id'];
+            }
+
+            if($user->client_id) {
+                $user->save();
+            }
         }
 
         $token = Str::random();
@@ -107,11 +113,6 @@ class AuthController extends Controller
         ];
 
         Mail::to($user['email'])->send(new SetPasswordLinkMail($details));
-
-        if ($client) {
-            $client->user_id = $user->id;
-            $client->save();
-        }
 
         $response = [
             'user' => $user,

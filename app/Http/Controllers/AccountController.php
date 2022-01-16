@@ -55,6 +55,9 @@ class AccountController extends Controller
             'roles' => 'array',
         ]);
 
+        /**
+         * @var User $user
+         */
         $user = User::with(['roles', 'client', 'projects',])->find(auth()->user()->id);
 
         if(isset($fields['password'])) {
@@ -63,6 +66,10 @@ class AccountController extends Controller
 
         if(isset($fields['roles']) && !empty($fields['roles'])) {
             $user->roles()->sync($fields['roles']);
+        }
+
+        if($user->hasRole('Client') == false) {
+            $user->client_id = null;
         }
 
         $user->fill($fields)->save();

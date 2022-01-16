@@ -288,28 +288,20 @@ class UserController extends Controller
             'client_id' => 'integer',
         ]);
 
-        $client = null;
-        if(isset($fields['client_id'])) {
-            $client = Client::find($fields['client_id']);
-        }
         if(isset($fields['client'])) {
-            $client = Client::whereName($fields['client'])->firstOrFail();
-        }
-
-        if($client && $client->user_id) {  //@TODO discuss this case
-            return response(['message' => 'This Company is already assigned to another user'], 422);
+            $user->client_id = Client::whereName($fields['client'])->firstOrFail()->id;
         }
 
         if(isset($fields['roles']) && !empty($fields['roles'])) {
             $user->roles()->sync($fields['roles']);
         }
 
-        $user->fill($fields)->save();
-
-        if ($client) {
-            $client->user_id = $user->id;
-            $client->save();
+        if($user->hasRole('Client') == false) {
+            $user->client_id = null;
+            unset($fields['client_id']);
         }
+
+        $user->fill($fields)->save();
 
         return response([
             'user' => User::with('roles', 'client', 'projects')->find($user->id),

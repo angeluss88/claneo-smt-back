@@ -84,6 +84,8 @@ class RoleController extends Controller
      */
     public function store(Request $request): Response
     {
+        die('Coming soon...'); // @TODO add value and use it instead of name to identify, also add cascade delete
+
         $fields = $request->validate([
             'name' => 'required|unique:roles,name|string|max:255',
             'description' => 'required|string|max:255',
@@ -143,7 +145,7 @@ class RoleController extends Controller
     public function show(Role $role): Response
     {
         return response([
-            'role' => $role,
+            'role' => Role::with('users')->find($role->id),
         ], 200);
     }
 
@@ -199,6 +201,7 @@ class RoleController extends Controller
      */
     public function update(Request $request, Role $role): Response
     {
+        die('Coming soon...');
         $fields = $request->validate([
             'name' => 'unique:roles,name|string|max:255',
             'description' => 'string|max:255',
@@ -248,6 +251,7 @@ class RoleController extends Controller
      */
     public function destroy(Role $role): Response
     {
+        die('Coming soon...');
         $role->delete();
 
         return response([], 204);

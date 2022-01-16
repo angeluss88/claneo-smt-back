@@ -171,7 +171,7 @@ class ProjectController extends Controller
     {
         $count = $request->count == '{count}' ? 10 : $request->count;
         return response([
-            'projects' => Project::with('user', 'client')->paginate($count),
+            'projects' => Project::with('client')->paginate($count),
         ], 200);
     }
 
@@ -216,8 +216,8 @@ class ProjectController extends Controller
     {
         $fields = $request->validate([
             'domain' => 'required|unique:projects,domain|string|max:255',
-            'user_id' => 'required_without:client|exists:users,id',
-            'client' => 'exists:clients,name',
+            'client_id' => 'required_without:client|exists:clients,id',
+            'client' => 'required_without:client_id|exists:clients,name',
             'ga_property_id' => 'max:20',
             'ua_property_id' => 'max:20',
             'ua_view_id' => 'max:20',
@@ -228,7 +228,7 @@ class ProjectController extends Controller
             'ga_property_id' => $fields['ga_property_id'] ?? '',
             'ua_property_id' => $fields['ua_property_id'] ?? '',
             'ua_view_id' => $fields['ua_view_id'] ?? '',
-            'user_id' => $fields['user_id'] ?? Client::with('user')->where('name', $fields['client'])->first()->user->id,
+            'client_id' => $fields['client_id'] ?? Client::where('name', $fields['client'])->firstOrFail()->id,
         ]);
 
         return response([
@@ -342,7 +342,7 @@ class ProjectController extends Controller
                 'max:255',
                 Rule::unique('projects')->ignore($project->id),
             ],
-            'user_id' => 'exists:users,id',
+            'client_id' => 'exists:users,id',
             'client' => 'exists:clients,name',
             'ga_property_id' => 'max:20',
             'ua_property_id' => 'max:20',
@@ -350,11 +350,11 @@ class ProjectController extends Controller
         ]);
 
         $project->fill($fields)->save();
+
         if (isset($fields['client'])) {
-            $project->user_id = Client::with('user')->where('name', $fields['client'])->first()->user->id;
+            $project->client_id = Client::where('name', $fields['client'])->firstOrFail()->id;
         }
         $project->save();
-
 
         return response([
             'project' => $project,
