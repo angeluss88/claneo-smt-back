@@ -9,7 +9,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Carbon;
 
 /**
  * App\Models\URL
@@ -25,12 +27,8 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @property int|null $project_id
  * @property string $status
  * @property string|null $page_type
- * @property string|null $ecom_conversion_rate
- * @property string|null $revenue
- * @property string|null $avg_order_value
- * @property string|null $bounce_rate
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property string $main_category
  * @property string|null $sub_category
  * @property string|null $sub_category2
@@ -38,20 +36,16 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @property string|null $sub_category4
  * @property string|null $sub_category5
  * @property int|null $import_id
- * @property-read Collection|\App\Models\Event[] $events
+ * @property-read Collection|Event[] $events
  * @property-read int|null $events_count
- * @property-read \App\Models\Project|null $project
+ * @property-read Project|null $project
  * @method static Builder|URL whereAvgOrderValue($value)
- * @method static Builder|URL whereBounceRate($value)
  * @method static Builder|URL whereCreatedAt($value)
- * @method static Builder|URL whereEcomConversionRate($value)
  * @method static Builder|URL whereId($value)
  * @method static Builder|URL whereImportId($value)
  * @method static Builder|URL whereMainCategory($value)
  * @method static Builder|URL wherePageType($value)
  * @method static Builder|URL whereProjectId($value)
- * @method static Builder|URL whereRevenue($value)
- * @method static Builder|URL whereStatus($value)
  * @method static Builder|URL whereSubCategory($value)
  * @method static Builder|URL whereSubCategory2($value)
  * @method static Builder|URL whereSubCategory3($value)
@@ -96,10 +90,6 @@ class URL extends Model
         'sub_category3',
         'sub_category4',
         'sub_category5',
-        'ecom_conversion_rate',
-        'revenue',
-        'avg_order_value',
-        'bounce_rate',
         'page_type',
         'import_id',
     ];
@@ -127,6 +117,14 @@ class URL extends Model
     public function events(): MorphMany
     {
         return $this->morphMany(Event::class, 'entity')->with('user');
+    }
+
+    /**
+     * @return HasMany
+     */
+    public function data(): HasMany
+    {
+        return $this->hasMany(UrlData::class);
     }
 
 }

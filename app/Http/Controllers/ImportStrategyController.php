@@ -6,9 +6,11 @@ use App\Models\Import;
 use App\Models\Keyword;
 use App\Models\Project;
 use App\Models\URL;
+use App\Models\UrlData;
 use App\Services\GoogleAnalyticsService;
 use Auth;
 use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 use Exception;
 use Google_Client;
 use Google_Service_Webmasters;
@@ -311,6 +313,7 @@ class ImportStrategyController extends Controller
      */
     public function import(Request $request): JsonResponse
     {
+        set_time_limit (0);
         $validator = Validator::make($request->all(), [
             'file' => 'required|file',
             'project_id' => 'required|integer|exists:projects,id',
@@ -494,34 +497,10 @@ class ImportStrategyController extends Controller
             $import->status = Import::STATUS_COMPLETE;
             $import->save();
 
-            $result = $this->expandGA($project, $urlsToExpand);
-            foreach ($result as $url => $data) {
-                $model = URL::whereUrl($url)->firstOrFail();
-                if ($model) {
-                    $model->fill($data)->save();
-                }
-            }
+            $this->expandGA($project, $urlsToExpand);
 
-            $result = $this->expandGSC($urlsToExpand);
+//            $result = $this->expandGSC($urlsToExpand);
 
-            foreach ($result as $url => $data) {
-                $model = URL::whereUrl($url)->first();
-
-                if ($model) {
-                    $keys = $data['keys'];
-                    unset($data['keys']);
-
-                    foreach ($keys as $key) {
-                        if (in_array($key, $keywordsToExpand)) {
-                            $keyword = Keyword::whereKeyword($key)->first();
-
-                            if ($keyword) {
-                                $model->keywords()->updateExistingPivot($keyword->id, $data);
-                            }
-                        }
-                    }
-                }
-            }
         } catch (Throwable $e) {
             var_dump($e->getMessage());
         }
@@ -654,57 +633,52 @@ class ImportStrategyController extends Controller
     /**
      * @param Project $project
      * @param array $urls
-     * @return array
      * @throws Exception
      */
-    public function expandGA(Project $project, array $urls): array
+    public function expandGA(Project $project, array $urls)
     {
+        $urls = array_unique($urls);
         try {
             if($project->ga_property_id) {
                 $dimensions = ['pagePath'];
                 $metrics = ['totalRevenue', 'averagePurchaseRevenue', 'engagementRate', 'conversions', 'sessions'];
-                $response = $this->ga->makeGAApiCall($project->ga_property_id, $dimensions, $metrics, Carbon::now()->subMonth(16)->format('Y-m-d'));
-                $result = $this->ga->formatGAResponse($response, $project->domain);
 
-                if(!empty($result)) {
-                    foreach ($result as $url => $data) {
-                        $result[$url]['bounce_rate'] = 1 - $data['engagementRate'];
-                        $result[$url]['bounce_rate'] = (string) $result[$url]['bounce_rate'];
-                        $result[$url]['ecom_conversion_rate'] = $data['sessions'] == 0 ? 0 : $data['conversions'] / $data['sessions'];
-                        $result[$url]['ecom_conversion_rate'] = (string) $result[$url]['ecom_conversion_rate'];
+                $period = CarbonPeriod::create(Carbon::now()->subMonth(16)->format('Y-m-d'), Carbon::now());
+                $urlData = [];
 
-                        if(isset($result[$url]['totalRevenue'])) {
-                            $result[$url]['revenue'] = $result[$url]['totalRevenue'];
-                            unset($result[$url]['totalRevenue']);
-                        }
+                foreach ($period as $date) {
+                    $date = $date->format('Y-m-d');
 
-                        if(isset($result[$url]['averagePurchaseRevenue'])) {
-                            $result[$url]['avg_order_value'] = $result[$url]['averagePurchaseRevenue'];
-                            unset($result[$url]['averagePurchaseRevenue']);
-                        }
+                    $response = $this->ga->makeGAApiCall($project->ga_property_id, $dimensions, $metrics, $date, $date);
+                    $result = $this->ga->formatGAResponse($response, $project->domain, $date);
 
-                        unset($result[$url]['engagementRate']);
-                        unset($result[$url]['conversions']);
-                        unset($result[$url]['sessions']);
-                    }
-                    foreach ($result as $url => $data) {
-                        if (!in_array($url, $urls)) {
-                            $url2 = $url;
+                    if(!empty($result)) {
+                        foreach ($result as $url => $data) {
+                            $result[$url]['bounce_rate'] = 1 - $data['engagementRate'];
+                            $result[$url]['bounce_rate'] = (string)$result[$url]['bounce_rate'];
+                            $result[$url]['ecom_conversion_rate'] = $data['sessions'] == 0 ? 0 : $data['conversions'] / $data['sessions'];
+                            $result[$url]['ecom_conversion_rate'] = (string)$result[$url]['ecom_conversion_rate'];
 
-                            if (substr($url, -1) === '/') {
-                                $url2 = rtrim($url, "/ ");
-                            } else {
-                                $url2 .= '/';
+                            if (isset($result[$url]['totalRevenue'])) {
+                                $result[$url]['revenue'] = $result[$url]['totalRevenue'];
+                                unset($result[$url]['totalRevenue']);
                             }
 
-                            if (!in_array($url2, $urls)) {
-                                unset($result[$url]);
+                            if (isset($result[$url]['averagePurchaseRevenue'])) {
+                                $result[$url]['avg_order_value'] = $result[$url]['averagePurchaseRevenue'];
+                                unset($result[$url]['averagePurchaseRevenue']);
                             }
+
+                            unset($result[$url]['engagementRate']);
+                            unset($result[$url]['conversions']);
+                            unset($result[$url]['sessions']);
                         }
+
+                        $urlData = $this->handleGAResult($urlData, $result, $urls);
                     }
                 }
+                $this->saveGaResults($urlData);
             } else {
-                $result = [];
                 if($project->ua_view_id) {
                     $metrics = [
                         ['expression' => "ga:bounceRate", 'alias' => 'bounceRate'],
@@ -712,30 +686,86 @@ class ImportStrategyController extends Controller
                         ['expression' => "ga:transactionRevenue", 'alias' => 'revenue'],
                         ['expression' => "ga:revenuePerTransaction", 'alias' => 'avgOrderValue'],
                     ];
-                    $result = $this->ga->parseUAResults($this->ga->getReport($project->ua_property_id, $project->ua_view_id, $metrics));
 
-                    foreach ($result as $url => $urlRow) {
-                        if (!in_array($url, $urls)) {
-                            $url2 = $url;
+                    $period = CarbonPeriod::create(Carbon::now()->subMonth(16)->format('Y-m-d'), Carbon::now());
+                    $urlData = [];
 
-                            if (substr($url, -1) === '/') {
-                                $url2 = rtrim($url, "/ ");
-                            } else {
-                                $url2 .= '/';
-                            }
+                    foreach ($period as $date) {
+                        $date = $date->format('Y-m-d');
+                        $result = $this->ga->parseUAResults($this->ga->getReport($project->ua_property_id, $project->ua_view_id, $metrics, $date, $date), $date);
 
-                            if (!in_array($url2, $urls)) {
-                                unset($result[$url]);
-                            }
-                        }
+                        $urlData = $this->handleGAResult($urlData, $result, $urls);
                     }
+                    $this->saveGaResults($urlData);
                 }
             }
         } catch (Throwable $e) {
             throw new Exception($e->getMessage());
         }
+    }
 
-        return $result;
+    protected function handleGAResult ($urlData, $result, $urls): array
+    {
+        foreach ($result as $url => $urlRow) {
+            if (!in_array($url, $urls)) {
+                $url2 = $url;
+
+                if (substr($url, -1) === '/') {
+                    $url2 = rtrim($url, "/ ");
+                } else {
+                    $url2 .= '/';
+                }
+
+                if (!in_array($url2, $urls)) {
+                    unset($result[$url]);
+                }
+            }
+        }
+
+        foreach ($result as $url => $data) {
+            if(isset($data['date'])) {
+                $urlData[$url][$data['date']] = $data;
+            }
+        }
+        return $urlData;
+    }
+
+    protected function saveGaResults($result)
+    {
+        $fails = [];
+        $upsert = [];
+        foreach ($result as $k=> $v) {
+            $url = URL::whereUrl($k)->first();
+
+            if(!$url) {
+                $url = URL::whereUrl($k . '/')->first();
+            }
+
+            if(!$url) {
+                $url = URL::whereUrl(rtrim($k, "/ "))->first();
+            }
+
+            if($url) {
+                foreach ($v as $date => $data) {
+                    if(empty($data)) {
+                        $data = [
+                            'ecom_conversion_rate' => 0,
+                            'revenue' => 0,
+                            'avg_order_value' => 0,
+                            'bounce_rate' => 0,
+                            'date' => $date,
+                        ];
+                    }
+                    $data['url_id'] = $url->id;
+                    $upsert[] = $data;
+                }
+            }
+        }
+
+        var_dump($fails);
+        var_dump($upsert);
+        UrlData::upsert($upsert, ['url_id', 'date']);
+        die;
     }
 
     /**

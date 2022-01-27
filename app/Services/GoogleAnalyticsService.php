@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use Carbon\Carbon;
 use Google\Analytics\Data\V1beta\BetaAnalyticsDataClient;
 use Google\Analytics\Data\V1beta\DateRange;
 use Google\Analytics\Data\V1beta\Dimension;
@@ -155,14 +154,16 @@ class GoogleAnalyticsService
      * @param $propertyId
      * @param $viewId
      * @param $metrics
+     * @param $start_date
+     * @param $end_date
      * @return GetReportsResponse
      */
-    public function getReport($propertyId, $viewId, $metrics): GetReportsResponse
+    public function getReport($propertyId, $viewId, $metrics, $start_date, $end_date): GetReportsResponse
     {
         // Create the DateRange object.
         $dateRange = new Google_Service_AnalyticsReporting_DateRange();
-        $dateRange->setStartDate(Carbon::now()->subMonth(16)->format('Y-m-d'));
-        $dateRange->setEndDate("today");
+        $dateRange->setStartDate($start_date);
+        $dateRange->setEndDate($end_date);
 
         // Create the Metrics Data.
         $metricsData = [];
@@ -191,8 +192,15 @@ class GoogleAnalyticsService
     /**
      * @throws \Exception
      */
-    public function parseUAResults(GetReportsResponse $reports): array
+    public function parseUAResults(GetReportsResponse $reports, $date): array
     {
+        $keyNames = [
+            'conversionRate' => 'ecom_conversion_rate',
+            'revenue' => 'revenue',
+            'avgOrderValue' => 'avg_order_value',
+            'bounceRate' => 'bounce_rate',
+        ];
+
         $result = [];
         foreach ($reports as $report) {
             $header = $report->getColumnHeader();
@@ -221,10 +229,11 @@ class GoogleAnalyticsService
                     foreach ($metrics as $metric) {
                         foreach ($metric->getValues() as $k => $value) {
                             $entry = $metricHeaders[$k];
-                            $item[$entry->getName()] = $value;
+                            $item[$keyNames[$entry->getName()]] = $value;
                         }
                     }
 
+                    $item['date'] = $date;
                     $result[$dimension] = $item;
                 }
             }
@@ -233,7 +242,7 @@ class GoogleAnalyticsService
         return $result;
     }
 
-    public function formatGAResponse($response, $domain): array
+    public function formatGAResponse($response, $domain, $date): array
     {
         $result = [];
         $metricHeaders = $response->getMetricHeaders();
@@ -246,10 +255,11 @@ class GoogleAnalyticsService
         foreach ($response->getRows() as $row) {
             $dimensionValues = $row->getDimensionValues();
             if(isset($dimensionValues[0]) && $dimensionValues[0] instanceof DimensionValue) {
+                $url = rtrim($domain, "/ ") . $dimensionValues[0]->getValue();
                 foreach ($row->getMetricValues() as $k => $v) {
-                    $url = rtrim($domain, "/ ") . $dimensionValues[0]->getValue();
                     $result[$url][$metricNames[$k]] = $v->getValue();
                 }
+                $result[$url]['date'] = $date;
             }
         }
 
