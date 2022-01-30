@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Carbon;
 
@@ -99,8 +100,7 @@ class URL extends Model
      */
     public function keywords(): BelongsToMany
     {
-        return $this->belongsToMany(Keyword::class, 'url_keyword', 'url_id')
-            ->withPivot('clicks', 'impressions', 'ctr');
+        return $this->belongsToMany(Keyword::class, 'url_keyword', 'url_id');
     }
 
     /**
@@ -122,9 +122,17 @@ class URL extends Model
     /**
      * @return HasMany
      */
-    public function data(): HasMany
+    public function urlData(): HasMany
     {
-        return $this->hasMany(UrlData::class);
+        return $this->hasMany(UrlData::class, 'url_id');
+    }
+
+    /**
+     * @return HasManyThrough
+     */
+    public function urlKeywordData(): HasManyThrough
+    {
+        return $this->hasManyThrough(UrlKeywordData::class, UrlKeyword::class, 'url_id', 'url_keyword_id');
     }
 
 }

@@ -203,6 +203,127 @@ class UrlResource
 
     /**
      * @OA\Property(
+     *     title="keywords_count",
+     *     description="Number of keywords",
+     *     example=10,
+     * )
+     *
+     * @var integer
+     */
+    public $keywords_count;
+
+    /**
+     * @OA\Property(
+     *     title="avgConvRate",
+     *     description="Average conversion rate",
+     *     example=1,
+     * )
+     *
+     * @var integer
+     */
+    public $avgConvRate;
+
+    /**
+     * @OA\Property(
+     *     title="avgRevenue",
+     *     description="Average revenue",
+     *     example=1,
+     * )
+     *
+     * @var integer
+     */
+    public $avgRevenue;
+
+    /**
+     * @OA\Property(
+     *     title="avgOrderValue",
+     *     description="Average order value",
+     *     example=10,
+     * )
+     *
+     * @var integer
+     */
+    public $avgOrderValue;
+
+    /**
+     * @OA\Property(
+     *     title="avgBounceRate",
+     *     description="Average bounce rate",
+     *     example=10,
+     * )
+     *
+     * @var integer
+     */
+    public $avgBounceRate;
+
+    /**
+     * @OA\Property(
+     *     title="avgPosition",
+     *     description="Average position",
+     *     example=10,
+     * )
+     *
+     * @var integer
+     */
+    public $avgPosition;
+
+    /**
+     * @OA\Property(
+     *     title="avgClicks",
+     *     description="Average clicks",
+     *     example=10,
+     * )
+     *
+     * @var integer
+     */
+    public $avgClicks;
+
+    /**
+     * @OA\Property(
+     *     title="avgImpressions",
+     *     description="Average impressions",
+     *     example=10,
+     * )
+     *
+     * @var integer
+     */
+    public $avgImpressions;
+
+    /**
+     * @OA\Property(
+     *     title="avgCtr",
+     *     description="Average CTR",
+     *     example=10,
+     * )
+     *
+     * @var integer
+     */
+    public $avgCtr;
+
+    /**
+     * @OA\Property(
+     *     title="avgSearchVolume",
+     *     description="Average Search Volume",
+     *     example=10,
+     * )
+     *
+     * @var integer
+     */
+    public $avgSearchVolume;
+
+    /**
+     * @OA\Property(
+     *     title="avgTrafficPotential",
+     *     description="Average Traffic Potential",
+     *     example=10,
+     * )
+     *
+     * @var integer
+     */
+    public $avgTrafficPotential;
+
+    /**
+     * @OA\Property(
      *     title="project",
      *     type="object",
      *     @OA\Schema (ref="#/components/schemas/ProjectResource")

@@ -99,47 +99,4 @@ class UrlCreateRequest
      */
     public $sub_category5;
 
-    /**
-     * @OA\Property(
-     *     title="ecom_conversion_rate",
-     *     description="E-Commerce conversion rate",
-     *     example="ecom_conversion_rate",
-     * )
-     *
-     * @var string
-     */
-    public $ecom_conversion_rate;
-
-    /**
-     * @OA\Property(
-     *     title="revenue",
-     *     description="Revenue",
-     *     example="revenue",
-     * )
-     *
-     * @var string
-     */
-    public $revenue;
-
-    /**
-     * @OA\Property(
-     *     title="avg_order_value",
-     *     description="Average Order Value",
-     *     example="avg_order_value",
-     * )
-     *
-     * @var string
-     */
-    public $avg_order_value;
-
-    /**
-     * @OA\Property(
-     *     title="bounce_rate",
-     *     description="Bounce Rate",
-     *     example="bounce_rate",
-     * )
-     *
-     * @var string
-     */
-    public $bounce_rate;
 }

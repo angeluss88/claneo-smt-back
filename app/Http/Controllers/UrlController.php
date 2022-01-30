@@ -4,8 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\URL;
+use App\Models\UrlData;
+use App\Models\UrlKeywordData;
 use Auth;
 use DateTime;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
@@ -174,9 +178,9 @@ class UrlController extends Controller
      *     @OA\Parameter(
      *         name="import_date",
      *         in="path",
-     *         description="Import date range (Y.m.d H:i-Y.m.d H:i)",
+     *         description="Import date range (Y.m.d-Y.m.d)",
      *         required=false,
-     *         example="2021.11.03 22:00-2021.12.03 23:00",
+     *         example="2021.11.03-2021.12.03",
      *         @OA\Schema(
      *             type="string",
      *         )
@@ -233,7 +237,7 @@ class UrlController extends Controller
     {
         $count = $request->count == '{count}' ? 10 : $request->count;
 
-        $url = URL::with(['project', 'events', 'keywords']);
+        $url = URL::with(['project', 'events', 'keywords', 'urlData', 'urlKeywordData']);
 
         if($request->keywords && $request->keywords !== '{keywords}') {
             $keywords = explode(',', $request->keywords);
@@ -287,10 +291,31 @@ class UrlController extends Controller
         if($request->import_date) {
             $importDates = explode('-', $request->import_date);
             if(count($importDates) == 2) {
-                $from = DateTime::createFromFormat('Y.m.d H:i', $importDates[0]);
-                $to = DateTime::createFromFormat('Y.m.d H:i', $importDates[1]);
+                $from = DateTime::createFromFormat('Y.m.d', $importDates[0]);
+                $to = DateTime::createFromFormat('Y.m.d', $importDates[1]);
                 if($from && $to) {
-                    $url->whereBetween('updated_at', [$from, $to]);
+                    $url->with([
+                        'urlData' => function (HasMany $query) use ($from, $to) {
+                            if ($from->format('Y-m-d') == $to->format('Y-m-d')) {
+                                $query->where('date', "=", $from->format('Y-m-d'));
+                            } else {
+                                $from = date('Y-m-d', strtotime('-1 day', strtotime($from->format('Y-m-d'))));
+                                $from = DateTime::createFromFormat('Y-m-d', $from);
+                                $query->whereBetween('date', [$from, $to]);
+                            }
+                        }
+                    ]);
+                    $url->with([
+                        'urlKeywordData' => function (HasManyThrough $query) use ($from, $to) {
+                            if ($from->format('Y-m-d') == $to->format('Y-m-d')) {
+                                $query->where('date', "=", $from->format('Y-m-d'));
+                            } else {
+                                $from = date('Y-m-d', strtotime('-1 day', strtotime($from->format('Y-m-d'))));
+                                $from = DateTime::createFromFormat('Y-m-d', $from);
+                                $query->whereBetween('date', [$from, $to]);
+                            }
+                        }
+                    ]);
                 }
             }
         }
@@ -303,8 +328,82 @@ class UrlController extends Controller
             }
         }
 
+        $url->withCount('keywords');
+        foreach ($url = $url->paginate($count) as $item) {
+            $avgConvRate = 0;
+            $avgRevenue = 0;
+            $avgOrderValue = 0;
+            $avgBounceRate = 0;
+            $avgSearchVolume = 0;
+
+            $avgPosition = 0;
+            $avgClicks = 0;
+            $avgImpressions = 0;
+            $avgCtr = 0;
+
+            $urlDataCount = 0;
+            $urlKeywordDataCount = 0;
+            /**
+             * @var UrlData $urlData
+             * @var URL $item
+             */
+            foreach ($item->urlData as $urlData) {
+                $avgConvRate += $urlData->ecom_conversion_rate;
+                $avgRevenue += $urlData->revenue;
+                $avgOrderValue += $urlData->avg_order_value;
+                $avgBounceRate += $urlData->bounce_rate;
+
+                $urlDataCount++;
+            }
+            if($urlDataCount !== 0) {
+                $avgConvRate /= $urlDataCount;
+                $avgRevenue /= $urlDataCount;
+                $avgOrderValue /= $urlDataCount;
+                $avgBounceRate /= $urlDataCount;
+            }
+
+            /**
+             * @var UrlKeywordData $urlKeywordData
+             */
+            foreach ($item->urlKeywordData as $urlKeywordData) {
+                $avgPosition += $urlKeywordData->position;
+                $avgClicks += $urlKeywordData->clicks;
+                $avgImpressions += $urlKeywordData->impressions;
+                $avgCtr += $urlKeywordData->ctr;
+
+                $urlKeywordDataCount++;
+            }
+            if($urlKeywordDataCount !== 0) {
+                $avgPosition /= $urlKeywordDataCount;
+                $avgClicks /= $urlKeywordDataCount;
+                $avgImpressions /= $urlKeywordDataCount;
+                $avgCtr /= $urlKeywordDataCount;
+            }
+
+            foreach ($item->keywords as $keyword) {
+                $avgSearchVolume += $keyword->search_volume;
+            }
+
+            if($item->keywords_count != 0) {
+                $avgSearchVolume /= $item->keywords_count;
+            }
+
+            $item->setAttribute('avgConvRate', $avgConvRate);
+            $item->setAttribute('avgRevenue', $avgRevenue);
+            $item->setAttribute('avgOrderValue', $avgOrderValue);
+            $item->setAttribute('avgBounceRate', $avgBounceRate);
+
+            $item->setAttribute('avgPosition', $avgPosition);
+            $item->setAttribute('avgClicks', $avgClicks);
+            $item->setAttribute('avgImpressions', $avgImpressions);
+            $item->setAttribute('avgCtr', $avgCtr);
+
+            $item->setAttribute('avgSearchVolume', $avgSearchVolume);
+            $item->setAttribute('avgTrafficPotential', $avgSearchVolume * $avgCtr);
+        }
+
         return response([
-            'urls' => $url->paginate($count),
+            'urls' => $url,
         ], 200);
     }
 
@@ -359,10 +458,6 @@ class UrlController extends Controller
             'sub_category3'         => 'string|max:255',
             'sub_category4'         => 'string|max:255',
             'sub_category5'         => 'string|max:255',
-            'ecom_conversion_rate'  => 'string|max:255',
-            'revenue'               => 'string|max:255',
-            'avg_order_value'       => 'string|max:255',
-            'bounce_rate'           => 'string|max:255',
             'page_type'             => 'string|max:255',
         ]);
 
@@ -429,7 +524,7 @@ class UrlController extends Controller
     public function show(URL $url): Response
     {
         return response([
-            'url' => URL::with(['project', 'events', 'keywords'])->find($url->id),
+            'url' => URL::with(['project', 'events', 'keywords', 'urlData', 'urlKeywordData'])->find($url->id),
         ], 200);
     }
 
@@ -501,10 +596,6 @@ class UrlController extends Controller
             'sub_category3'         => 'string|max:255',
             'sub_category4'         => 'string|max:255',
             'sub_category5'         => 'string|max:255',
-            'ecom_conversion_rate'  => 'string|max:255',
-            'revenue'               => 'string|max:255',
-            'avg_order_value'       => 'string|max:255',
-            'bounce_rate'           => 'string|max:255',
             'page_type'             => 'string|max:255',
             'keywords'              => 'array',
         ]);
@@ -518,32 +609,7 @@ class UrlController extends Controller
         $url->fill($fields)->save();
 
         if(isset($fields['keywords'])) {
-            $pivot = [];
-            foreach ($fields['keywords'] as $value) {
-                if(!isset($value['id'])) {
-                    return response([
-                        'message' => 'Keywords array should contain keyword_id',
-                    ], 422);
-                }
-                $v = $value['id'];
-                unset($value['id']);
-                $pivot[$v] = $value;
-            }
-
-            foreach ($pivot as $k_id => $data) {
-                $attributes = [];
-                if(isset($data['clicks'])){
-                    $attributes['clicks'] = $data['clicks'];
-                }
-                if(isset($data['impressions'])){
-                    $attributes['impressions'] = $data['impressions'];
-                }
-                if(isset($data['ctr'])){
-                    $attributes['ctr'] = $data['ctr'];
-                }
-
-                $url->keywords()->updateExistingPivot($k_id, $attributes);
-            }
+            $url->keywords()->sync($fields['keywords']);
         }
 
         Event::create([
@@ -556,7 +622,7 @@ class UrlController extends Controller
         ]);
 
         return response([
-            'url' => URL::with('keywords', 'events')->find($url->id),
+            'url' => URL::with('keywords', 'events', 'project', 'urlData', 'urlKeywordData')->find($url->id),
         ], 200);
     }
 

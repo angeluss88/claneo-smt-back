@@ -101,50 +101,6 @@ class UrlRequest
 
     /**
      * @OA\Property(
-     *     title="ecom_conversion_rate",
-     *     description="E-Commerce conversion rate",
-     *     example="ecom_conversion_rate",
-     * )
-     *
-     * @var string
-     */
-    public $ecom_conversion_rate;
-
-    /**
-     * @OA\Property(
-     *     title="revenue",
-     *     description="Revenue",
-     *     example="revenue",
-     * )
-     *
-     * @var string
-     */
-    public $revenue;
-
-    /**
-     * @OA\Property(
-     *     title="avg_order_value",
-     *     description="Average Order Value",
-     *     example="avg_order_value",
-     * )
-     *
-     * @var string
-     */
-    public $avg_order_value;
-
-    /**
-     * @OA\Property(
-     *     title="bounce_rate",
-     *     description="Bounce Rate",
-     *     example="bounce_rate",
-     * )
-     *
-     * @var string
-     */
-    public $bounce_rate;
-
-    /**
-     * @OA\Property(
      *     title="page_type",
      *     description="page_type",
      *     example="page_type",
@@ -155,42 +111,13 @@ class UrlRequest
     public $page_type;
 
     /**
-     *     @OA\Property(
-     *         type="array",
-     *         example={{
-     *            "id": 1,
-     *            "clicks": "1111",
-     *            "impressions": "1111",
-     *            "ctr": "8011118",
-     *         }, {
-     *            "id": 2,
-     *            "clicks": "2222",
-     *            "impressions": "2222",
-     *             "ctr": "232323"
-     *         }},
-     *         @OA\Items(
-     *             @OA\Property(
-     *                 property="id",
-     *                 type="integer",
-     *                 example=1
-     *             ),
-     *             @OA\Property(
-     *                 property="clicks",
-     *                 type="string",
-     *                 example=""
-     *             ),
-     *             @OA\Property(
-     *                 property="impressions",
-     *                 type="string",
-     *                 example=""
-     *             ),
-     *             @OA\Property(
-     *                 property="ctr",
-     *                 type="string",
-     *                 example=""
-     *             ),
-     *         ),
-     *     ),
+     * @OA\Property(
+     *     title="keywords",
+     *     description="Keywords IDs",
+     *     example={1, 2},
+     * )
+     *
+     * @var string
      */
     public $keywords;
 }
