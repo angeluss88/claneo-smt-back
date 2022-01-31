@@ -108,4 +108,15 @@ class ProjectResource
      */
     public $ua_view_id;
 
+    /**
+     * @OA\Property(
+     *     title="strategy",
+     *     description="Expand Strategy",
+     *     example=""
+     * )
+     *
+     * @var string
+     */
+    public $strategy;
+
 }

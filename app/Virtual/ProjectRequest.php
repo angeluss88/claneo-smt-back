@@ -76,4 +76,16 @@ class ProjectRequest
      * @var string
      */
     public $ua_view_id;
+
+    /**
+     * @OA\Property(
+     *     title="strategy",
+     *     description="Expand Strategy ('ga_property', 'ua_property' or 'no_expand')",
+     *     example="no_expand"
+     * )
+     *
+     * @var string
+     */
+    public $strategy;
 }
+

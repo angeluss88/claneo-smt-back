@@ -12,7 +12,7 @@ class ProjectController extends Controller
 {
     /**
      * @OA\Get(
-     *     path="/projects?page={page}&count={count}",
+     *     path="/projects?page={page}&count={count}&client_id={client_id}",
      *     operationId="projects_index",
      *     tags={"Projects"},
      *     summary="Projects List",
@@ -159,6 +159,16 @@ class ProjectController extends Controller
      *             type="integer",
      *         )
      *     ),
+     *     @OA\Parameter(
+     *         name="client_id",
+     *         in="path",
+     *         description="Client filter",
+     *         required=false,
+     *         example=1,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
      *     security={
      *       {"bearerAuth": {}},
      *     },
@@ -170,8 +180,15 @@ class ProjectController extends Controller
     public function index(Request $request): Response
     {
         $count = $request->count == '{count}' ? 10 : $request->count;
+
+        $project = Project::with('client');
+
+        if ($request->client_id && $request->client_id !== '{client_id}') {
+            $project->where('client_id', (int) $request->client_id);
+        }
+
         return response([
-            'projects' => Project::with('client')->paginate($count),
+            'projects' => $project->paginate($count),
         ], 200);
     }
 
@@ -221,6 +238,11 @@ class ProjectController extends Controller
             'ga_property_id' => 'max:20',
             'ua_property_id' => 'max:20',
             'ua_view_id' => 'max:20',
+            'strategy'  => [
+                'required',
+                'max:255',
+                Rule::in([ Project::GA_STRATEGY, Project::UA_STRATEGY, Project::NO_EXPAND_STRATEGY]),
+            ],
         ]);
 
         $project = Project::create([
@@ -229,6 +251,7 @@ class ProjectController extends Controller
             'ua_property_id' => $fields['ua_property_id'] ?? '',
             'ua_view_id' => $fields['ua_view_id'] ?? '',
             'client_id' => $fields['client_id'] ?? Client::where('name', $fields['client'])->firstOrFail()->id,
+            'strategy' => $fields['strategy'] ?? Project::NO_EXPAND_STRATEGY,
         ]);
 
         return response([
@@ -347,6 +370,10 @@ class ProjectController extends Controller
             'ga_property_id' => 'max:20',
             'ua_property_id' => 'max:20',
             'ua_view_id' => 'max:20',
+            'strategy'  => [
+                'max:255',
+                Rule::in([ Project::GA_STRATEGY, Project::UA_STRATEGY, Project::NO_EXPAND_STRATEGY]),
+            ],
         ]);
 
         $project->fill($fields)->save();

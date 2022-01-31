@@ -42,6 +42,10 @@ class Project extends Model
 {
     use HasFactory;
 
+    const GA_STRATEGY = 'ga_property';
+    const UA_STRATEGY = 'ua_property';
+    const NO_EXPAND_STRATEGY = 'no_expand';
+
     /**
      * The attributes that are mass assignable.
      *
@@ -53,6 +57,7 @@ class Project extends Model
         'ga_property_id',
         'ua_property_id',
         'ua_view_id',
+        'strategy',
     ];
 
     /**
