@@ -497,7 +497,9 @@ class ImportStrategyController extends Controller
             $import->status = Import::STATUS_COMPLETE;
             $import->save();
 
-            $this->expandGA($project, $urlsToExpand);
+            if($project->strategy !== Project::NO_EXPAND_STRATEGY) {
+                $this->expandGA($project, $urlsToExpand);
+            }
 
 //            $result = $this->expandGSC($urlsToExpand);
 
@@ -639,46 +641,48 @@ class ImportStrategyController extends Controller
     {
         $urls = array_unique($urls);
         try {
-            if($project->ga_property_id) {
-                $dimensions = ['pagePath'];
-                $metrics = ['totalRevenue', 'averagePurchaseRevenue', 'engagementRate', 'conversions', 'sessions'];
+            if($project->strategy === Project::GA_STRATEGY){
+                if($project->ga_property_id) {
+                    $dimensions = ['pagePath'];
+                    $metrics = ['totalRevenue', 'averagePurchaseRevenue', 'engagementRate', 'conversions', 'sessions'];
 
-                $period = CarbonPeriod::create(Carbon::now()->subMonth(16)->format('Y-m-d'), Carbon::now());
-                $urlData = [];
+                    $period = CarbonPeriod::create(Carbon::now()->subMonth(16)->format('Y-m-d'), Carbon::now());
+                    $urlData = [];
 
-                foreach ($period as $date) {
-                    $date = $date->format('Y-m-d');
+                    foreach ($period as $date) {
+                        $date = $date->format('Y-m-d');
 
-                    $response = $this->ga->makeGAApiCall($project->ga_property_id, $dimensions, $metrics, $date, $date);
-                    $result = $this->ga->formatGAResponse($response, $project->domain, $date);
+                        $response = $this->ga->makeGAApiCall($project->ga_property_id, $dimensions, $metrics, $date, $date);
+                        $result = $this->ga->formatGAResponse($response, $project->domain, $date);
 
-                    if(!empty($result)) {
-                        foreach ($result as $url => $data) {
-                            $result[$url]['bounce_rate'] = 1 - $data['engagementRate'];
-                            $result[$url]['bounce_rate'] = (string)$result[$url]['bounce_rate'];
-                            $result[$url]['ecom_conversion_rate'] = $data['sessions'] == 0 ? 0 : $data['conversions'] / $data['sessions'];
-                            $result[$url]['ecom_conversion_rate'] = (string)$result[$url]['ecom_conversion_rate'];
+                        if (!empty($result)) {
+                            foreach ($result as $url => $data) {
+                                $result[$url]['bounce_rate'] = 1 - $data['engagementRate'];
+                                $result[$url]['bounce_rate'] = (string)$result[$url]['bounce_rate'];
+                                $result[$url]['ecom_conversion_rate'] = $data['sessions'] == 0 ? 0 : $data['conversions'] / $data['sessions'];
+                                $result[$url]['ecom_conversion_rate'] = (string)$result[$url]['ecom_conversion_rate'];
 
-                            if (isset($result[$url]['totalRevenue'])) {
-                                $result[$url]['revenue'] = $result[$url]['totalRevenue'];
-                                unset($result[$url]['totalRevenue']);
+                                if (isset($result[$url]['totalRevenue'])) {
+                                    $result[$url]['revenue'] = $result[$url]['totalRevenue'];
+                                    unset($result[$url]['totalRevenue']);
+                                }
+
+                                if (isset($result[$url]['averagePurchaseRevenue'])) {
+                                    $result[$url]['avg_order_value'] = $result[$url]['averagePurchaseRevenue'];
+                                    unset($result[$url]['averagePurchaseRevenue']);
+                                }
+
+                                unset($result[$url]['engagementRate']);
+                                unset($result[$url]['conversions']);
+                                unset($result[$url]['sessions']);
                             }
 
-                            if (isset($result[$url]['averagePurchaseRevenue'])) {
-                                $result[$url]['avg_order_value'] = $result[$url]['averagePurchaseRevenue'];
-                                unset($result[$url]['averagePurchaseRevenue']);
-                            }
-
-                            unset($result[$url]['engagementRate']);
-                            unset($result[$url]['conversions']);
-                            unset($result[$url]['sessions']);
+                            $urlData = $this->handleGAResult($urlData, $result, $urls);
                         }
-
-                        $urlData = $this->handleGAResult($urlData, $result, $urls);
                     }
+                    $this->saveGaResults($urlData);
                 }
-                $this->saveGaResults($urlData);
-            } else {
+            } else if($project->strategy === Project::UA_STRATEGY){
                 if($project->ua_view_id) {
                     $metrics = [
                         ['expression' => "ga:bounceRate", 'alias' => 'bounceRate'],
@@ -762,10 +766,7 @@ class ImportStrategyController extends Controller
             }
         }
 
-        var_dump($fails);
-        var_dump($upsert);
-        UrlData::upsert($upsert, ['url_id', 'date']);
-        die;
+        UrlData::upsert($upsert, ['url_id', 'date'], ['ecom_conversion_rate', 'revenue', 'avg_order_value', 'bounce_rate']);
     }
 
     /**

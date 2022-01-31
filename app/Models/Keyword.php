@@ -87,8 +87,7 @@ class Keyword extends Model
      */
     public function urls(): BelongsToMany
     {
-        return $this->belongsToMany(URL::class, 'url_keyword', 'keyword_id', 'url_id')
-            ->withPivot('clicks', 'impressions', 'ctr');
+        return $this->belongsToMany(URL::class, 'url_keyword', 'keyword_id', 'url_id');
     }
 
     /**

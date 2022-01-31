@@ -31,11 +31,13 @@ use Illuminate\Support\Carbon;
  * @property string|null $ga_property_id
  * @property string|null $ua_property_id
  * @property string|null $ua_view_id
+ * @property string $strategy
  * @property-read Client|null $client
  * @property-read Collection|URL[] $urls
  * @property-read int|null $urls_count
  * @method static Builder|Project whereGaPropertyId($value)
  * @method static Builder|Project whereUaPropertyId($value)
+ * @method static Builder|Project whereStrategy($value)
  * @method static Builder|Project whereUaViewId($value)
  */
 class Project extends Model
