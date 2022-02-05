@@ -357,7 +357,6 @@ class UrlController extends Controller
             }
             if($urlDataCount !== 0) {
                 $avgConvRate /= $urlDataCount;
-                $avgRevenue /= $urlDataCount;
                 $avgOrderValue /= $urlDataCount;
                 $avgBounceRate /= $urlDataCount;
             }
@@ -375,8 +374,8 @@ class UrlController extends Controller
             }
             if($urlKeywordDataCount !== 0) {
                 $avgPosition /= $urlKeywordDataCount;
-                $avgClicks /= $urlKeywordDataCount;
-                $avgImpressions /= $urlKeywordDataCount;
+//                $avgClicks /= $urlKeywordDataCount;
+//                $avgImpressions /= $urlKeywordDataCount;
                 $avgCtr /= $urlKeywordDataCount;
             }
 
@@ -385,7 +384,7 @@ class UrlController extends Controller
             }
 
             if($item->keywords_count != 0) {
-                $avgSearchVolume /= $item->keywords_count;
+//                $avgSearchVolume /= $item->keywords_count;
             }
 
             $item->setAttribute('avgConvRate', $avgConvRate);
@@ -399,7 +398,7 @@ class UrlController extends Controller
             $item->setAttribute('avgCtr', $avgCtr);
 
             $item->setAttribute('avgSearchVolume', $avgSearchVolume);
-            $item->setAttribute('avgTrafficPotential', $avgSearchVolume * $avgCtr);
+            $item->setAttribute('avgTrafficPotential', 'Coming soon...');
         }
 
         return response([
