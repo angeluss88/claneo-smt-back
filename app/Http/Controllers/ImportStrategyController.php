@@ -408,9 +408,10 @@ class ImportStrategyController extends Controller
 
                 // create keyword item form row
                 $keyword['keyword'] = $row[$headers[$keys['keyword']]];
-                $keyword['search_volume'] = (int)$row[$headers[$keys['search_volume']]];
+
+                $keyword['search_volume'] = (int) str_replace('.', '', $row[$headers[$keys['search_volume']]]);
                 $keyword['search_volume_clustered'] = isset($headers[$keys['sv_clustered']]) ? $row[$headers[$keys['sv_clustered']]] : null;
-                $keyword['search_volume_clustered'] = (int)$keyword['search_volume_clustered'];
+                $keyword['search_volume_clustered'] = (int)str_replace('.', '', $keyword['search_volume_clustered']);
 
                 $keyword['current_ranking_url'] = $headers[$keys['current_ranking_url']] ? $row[$headers[$keys['current_ranking_url']]] : null;
 
