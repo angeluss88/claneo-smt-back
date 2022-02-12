@@ -43,8 +43,8 @@ class GoogleAnalyticsService
         $this->key_file = config_path() . DIRECTORY_SEPARATOR . $this->key_file;
         $this->beta_analytics_data_credentials = config_path() . DIRECTORY_SEPARATOR . $this->beta_analytics_data_credentials;
 
-        $this->analytics = $this->getAuthorizedAnalyticsObject();
-        $this->reportings = $this->getAuthorizedReportingObject();
+//        $this->analytics = $this->getAuthorizedAnalyticsObject();
+//        $this->reportings = $this->getAuthorizedReportingObject();
     }
 
     /**
@@ -264,6 +264,21 @@ class GoogleAnalyticsService
         }
 
         return $result;
+    }
+
+    static function getAccessTokenPath (): string
+    {
+        return config_path() . DIRECTORY_SEPARATOR . 'GAAccessToken.json';
+    }
+
+    static function getRefreshTokenPath (): string
+    {
+        return config_path() . DIRECTORY_SEPARATOR . 'GARefreshToken.txt';
+    }
+
+    static function getAuthCodePath (): string
+    {
+        return config_path() . DIRECTORY_SEPARATOR . 'GAAuthCode.txt';
     }
 }
 

@@ -41,12 +41,29 @@ class Handler extends ExceptionHandler
         });
     }
 
-    public function render($request, Throwable $exception)
+    public function render($request, Throwable $e)
     {
-        if ($exception instanceof ModelNotFoundException) {
+        if ($e instanceof ModelNotFoundException) {
             return response()->json(['message' => 'Not Found!'], 404);
         }
 
-        return parent::render($request, $exception);
+        return response()->json(
+            $this->getJsonMessage($e),
+            $this->getExceptionHTTPStatusCode($e)
+        );
+    }
+
+    protected function getJsonMessage($e): array
+    {
+        return [
+            'status' => 'false',
+            'message' => $e->getMessage(),
+        ];
+    }
+
+    protected function getExceptionHTTPStatusCode($e): int
+    {
+        return method_exists($e, 'getStatusCode') ?
+            $e->getStatusCode() : 500;
     }
 }

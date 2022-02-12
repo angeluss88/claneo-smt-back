@@ -7,12 +7,16 @@ use App\Models\Keyword;
 use App\Models\Project;
 use App\Models\URL;
 use App\Models\UrlData;
+use App\Models\UrlKeyword;
+use App\Models\UrlKeywordData;
 use App\Services\GoogleAnalyticsService;
 use Auth;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Exception;
-use Google_Client;
+use Google\Auth\Credentials\ServiceAccountCredentials;
+use Google\Client;
+use Google\Service\Webmasters;
 use Google_Service_Webmasters;
 use Google_Service_Webmasters_SearchAnalyticsQueryRequest;
 use Illuminate\Http\JsonResponse;
@@ -502,16 +506,15 @@ class ImportStrategyController extends Controller
                 $this->expandGA($project, $urlsToExpand);
             }
 
-//            $result = $this->expandGSC($urlsToExpand);
+            $result = $this->expandGSC($urlsToExpand, $keywordsToExpand, $project);
+            $this->saveGSCResults($result);
 
         } catch (Throwable $e) {
-            var_dump($e->getMessage());
+            throw new Exception($e->getMessage());
         }
 
         $return = [];
-        if(isset($import)) {
-            $return['import_id'] = $import->id;
-        }
+        $return['import_id'] = $import->id;
 
         return response()->json($return, 201);
     }
@@ -737,7 +740,6 @@ class ImportStrategyController extends Controller
 
     protected function saveGaResults($result)
     {
-        $fails = [];
         $upsert = [];
         foreach ($result as $k=> $v) {
             $url = URL::whereUrl($k)->first();
@@ -772,40 +774,64 @@ class ImportStrategyController extends Controller
 
     /**
      * @param $urls
+     * @param $keywords
+     * @param Project $project
      * @return array
      * @throws Exception
      */
-    public function expandGSC($urls): array
+    public function expandGSC($urls, $keywords, Project $project): array
     {
         try {
             $result = [];
+            $credentials = config_path() . DIRECTORY_SEPARATOR . 'client_secret_OA.json';
+            if (!file_exists($credentials)) {
+                var_dump($credentials); die;
+            }
 
-            $client = new Google_Client();
-            $client->setApplicationName('"Hello Analytics Reporting"');
-            $client->setAuthConfig(config_path() . DIRECTORY_SEPARATOR . 'credentials.json');
-            $client->addScope('https://www.googleapis.com/auth/webmasters');
+            $client = new Client();
+            $client->setAuthConfig($credentials);
+
+            $client->addScope(Webmasters::WEBMASTERS_READONLY);
+
+            $protocol = stripos($_SERVER['SERVER_PROTOCOL'],'https') === 0 ? 'https://' : 'http://';
+            $client->setRedirectUri($protocol . $_SERVER['HTTP_HOST']);
+            $client->setAccessType('offline');
+            $client->setPrompt('select_account consent');
+
+            // Doing this manually because of bug in Google Client. Probably unnecessary in future
+            $client = $this->authGoogleClient($client);
 
             $serviceWebmasters = new Google_Service_Webmasters( $client );
 
             if(is_countable($serviceWebmasters->sites->listSites()->getSiteEntry())) {
                 foreach ($serviceWebmasters->sites->listSites()->getSiteEntry() as $site) {
-                    if(in_array($site->getSiteUrl(), $urls)) {
-                        $postBody = new Google_Service_Webmasters_SearchAnalyticsQueryRequest( [
+
+                    if($site->getSiteUrl() == $project->domain
+                        || $site->getSiteUrl() == $project->domain . '/'
+                        || $site->getSiteUrl() == "http://" . $project->domain . '/'
+                        || $site->getSiteUrl() == "https://" . $project->domain . '/'
+                        || $site->getSiteUrl() == "http://" . $project->domain
+                        || $site->getSiteUrl() == "https://" . $project->domain
+                    ) {
+                        $postBody = new Webmasters\SearchAnalyticsQueryRequest( [
                             'startDate'  => Carbon::now()->subMonth(16)->format('Y-m-d'),
                             'endDate'    => Carbon::now()->format('Y-m-d'),
                             'dimensions' => [
                                 'page',
+                                'query',
+                                'date'
                             ],
                         ] );
 
                         $searchAnalyticsResponse = $serviceWebmasters->searchanalytics->query($site->getSiteUrl(), $postBody);
 
                         foreach ($searchAnalyticsResponse->getRows() as $row) {
-                            $result[$site->getSiteUrl()]['clicks'] = $row->getClicks();
-                            $result[$site->getSiteUrl()]['impressions'] = $row->getImpressions();
-                            $result[$site->getSiteUrl()]['ctr'] = $row->getCtr();
-                            $result[$site->getSiteUrl()]['position'] = $row->getPosition();
-                            $result[$site->getSiteUrl()]['keys'] = $row->getKeys();
+                            if(in_array($row->getKeys()[0], $urls) && in_array($row->getKeys()[1], $keywords)) {
+                                $result[$row->getKeys()[0]][$row->getKeys()[1]][$row->getKeys()[2]]['clicks'] = $row->getClicks();
+                                $result[$row->getKeys()[0]][$row->getKeys()[1]][$row->getKeys()[2]]['impressions'] = $row->getImpressions();
+                                $result[$row->getKeys()[0]][$row->getKeys()[1]][$row->getKeys()[2]]['ctr'] = $row->getCtr();
+                                $result[$row->getKeys()[0]][$row->getKeys()[1]][$row->getKeys()[2]]['position'] = $row->getPosition();
+                            }
                         }
                     }
                 }
@@ -815,5 +841,179 @@ class ImportStrategyController extends Controller
         }
 
         return $result;
+    }
+
+    /**
+     * @param Client $client
+     * @return Client
+     * @throws Exception
+     */
+    public function authGoogleClient(Client $client): Client
+    {
+        $accessTokenPath = GoogleAnalyticsService::getAccessTokenPath();
+        if (file_exists($accessTokenPath)) {
+            $client->setAccessToken(json_decode(file_get_contents($accessTokenPath), true));
+        }
+
+        if ($client->isAccessTokenExpired()) {
+            // Refresh the token if possible, else fetch a new one.
+            if ($refreshToken = $this->getRefreshToken()) {
+                $accessToken = $this->getAccessTokenWithRefreshToken($refreshToken, $client);
+            } else {
+                if($authCode = $this->getAuthCode()) {
+                    $accessToken = $this->fetchAccessTokenWithAuthCode($authCode, $client);
+                    if ($res = json_decode($accessToken, true)) {
+                       if(isset($res['refresh_token'])) {
+                           $refreshTokenPath = GoogleAnalyticsService::getRefreshTokenPath();
+                           if (!file_exists(dirname($refreshTokenPath))) {
+                               mkdir(dirname($refreshTokenPath), 0700, true);
+                           }
+                           $res['refresh_token'] = '1//09Bfc95FN-iRxCgYIARAAGAkSNwF-L9IrcQLSok1zpRfp6PBUDYeplzfrtQVnttpzDyHqcsQyDCeA0qO1cX4HkR-kUe4GNiO73kI';
+                           file_put_contents($refreshTokenPath, $res['refresh_token']);
+                       }
+                    }
+                } else {
+                    throw new Exception("Can't retrieve Auth code");
+                }
+            }
+
+            $client->setAccessToken($accessToken);
+            $accessToken = $client->getAccessToken();
+            $accessToken['created'] = time();
+
+            // Save the token to a file.
+            if (!file_exists(dirname($accessTokenPath))) {
+                mkdir(dirname($accessTokenPath), 0700, true);
+            }
+            file_put_contents($accessTokenPath, json_encode($accessToken));
+        }
+
+        return $client;
+    }
+
+    private function getAccessTokenWithRefreshToken(string $refreshToken, Client $client)
+    {
+        $postFields = 'client_id=' . $client->getClientId();
+        $postFields .= '&redirect_uri=' . urlencode($client->getRedirectUri());
+        $postFields .= '&client_secret=' . $client->getClientSecret();
+        $postFields .= '&grant_type=refresh_token&refresh_token=' . urlencode($refreshToken);
+
+        $curl = curl_init();
+
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => 'https://oauth2.googleapis.com/token',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'POST',
+            CURLOPT_POSTFIELDS => $postFields,
+            CURLOPT_HTTPHEADER => array(
+                'Content-Type: application/x-www-form-urlencoded'
+            ),
+        ));
+
+        $response = curl_exec($curl);
+        curl_close($curl);
+
+        return $response;
+    }
+
+    private function getRefreshToken(): string
+    {
+        $refreshTokenPath = GoogleAnalyticsService::getRefreshTokenPath();
+        if (file_exists($refreshTokenPath)) {
+            return file_get_contents($refreshTokenPath);
+        }
+
+        return '';
+    }
+
+    private function getAuthCode(): string
+    {
+        $authCodePath = GoogleAnalyticsService::getAuthCodePath();
+        if (file_exists($authCodePath)) {
+            return file_get_contents($authCodePath);
+        }
+
+        return '';
+    }
+
+    private function fetchAccessTokenWithAuthCode(string $authCode, Client $client): string
+    {
+        $postFields = 'client_id=' . $client->getClientId();
+        $postFields .= '&redirect_uri=' . urlencode($client->getRedirectUri());
+        $postFields .= '&client_secret=' . $client->getClientSecret();
+        $postFields .= '&code=' . $authCode;
+        $postFields .= '&grant_type=authorization_code';
+
+        $curl = curl_init();
+
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => 'https://accounts.google.com/o/oauth2/token',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'POST',
+            CURLOPT_POSTFIELDS => $postFields,
+            CURLOPT_HTTPHEADER => array(
+                'Content-Type: application/x-www-form-urlencoded',
+                'Cookie: __Host-GAPS=1:yehutPjWLkKk1sHcXLstjifRWJKo2w:pD8uRL2a_tTy_fh9'
+            ),
+        ));
+
+        $response = curl_exec($curl);
+
+        curl_close($curl);
+
+        return $response;
+    }
+
+    public function saveGSCResults(array $result)
+    {
+        $upsert = [];
+        foreach ($result as $site => $item) {
+            $url = URL::whereUrl($site)->first();
+
+            if(!$url) {
+                $url = URL::whereUrl($site . '/')->first();
+            }
+
+            if(!$url) {
+                $url = URL::whereUrl(rtrim($site, "/ "))->first();
+            }
+
+            if($url) {
+                foreach ($item as $keyword => $dates) {
+                    $keyword = Keyword::whereKeyword($keyword)->first();
+                    if($keyword) {
+                        foreach ($dates as $date => $data) {
+                            if (empty($data)) {
+                                $data = [
+                                    'position' => 0,
+                                    'clicks' => 0,
+                                    'impressions' => 0,
+                                    'ctr' => 0,
+                                    'date' => $date,
+                                ];
+                            }
+                            $model = UrlKeyword::whereUrlId($url->id)->where('keyword_id', $keyword->id)->first();
+
+                            if($model) {
+                                $data['url_keyword_id'] = $model->id;
+                                $upsert[] = $data;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        UrlKeywordData::upsert($upsert, ['url_keyword_id', 'date'], ['position', 'clicks', 'impressions', 'ctr']);
     }
 }

@@ -18,4 +18,9 @@ yarn-error.log
 /config/ga.json
 /config/ga_oauth.json
 /config/credentials.json
+/config/GAAccessToken.json
+/config/GARefreshToken.txt
+/config/GAAuthCode.txt
+/config/claneo_gsc_SA.json
+/config/client_secret_OA.json
 
