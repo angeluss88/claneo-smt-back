@@ -2,6 +2,14 @@
 
 namespace App\Services;
 
+use App\Models\Keyword;
+use App\Models\Project;
+use App\Models\URL;
+use App\Models\UrlData;
+use App\Models\UrlKeyword;
+use App\Models\UrlKeywordData;
+use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 use Google\Analytics\Data\V1beta\BetaAnalyticsDataClient;
 use Google\Analytics\Data\V1beta\DateRange;
 use Google\Analytics\Data\V1beta\Dimension;
@@ -20,6 +28,8 @@ use Google_Service_AnalyticsReporting_DateRange;
 use Google_Service_AnalyticsReporting_GetReportsRequest;
 use Google_Service_AnalyticsReporting_Metric;
 use Google_Service_AnalyticsReporting_ReportRequest;
+use Throwable;
+use Google_Service_Webmasters;
 
 class GoogleAnalyticsService
 {
@@ -288,11 +298,10 @@ class GoogleAnalyticsService
                     $accessToken = $this->fetchAccessTokenWithAuthCode($authCode, $client);
                     if ($res = json_decode($accessToken, true)) {
                         if(isset($res['refresh_token'])) {
-                            $refreshTokenPath = GoogleAnalyticsService::getRefreshTokenPath();
+                            $refreshTokenPath = self::getRefreshTokenPath();
                             if (!file_exists(dirname($refreshTokenPath))) {
                                 mkdir(dirname($refreshTokenPath), 0700, true);
                             }
-//                            $res['refresh_token'] = '1//09Bfc95FN-iRxCgYIARAAGAkSNwF-L9IrcQLSok1zpRfp6PBUDYeplzfrtQVnttpzDyHqcsQyDCeA0qO1cX4HkR-kUe4GNiO73kI';
                             file_put_contents($refreshTokenPath, $res['refresh_token']);
                         }
                     }
@@ -404,6 +413,259 @@ class GoogleAnalyticsService
         curl_close($curl);
 
         return $response;
+    }
+
+    /**
+     * @param Project $project
+     * @param array $urls
+     * @throws Exception
+     */
+    public function expandGA(Project $project, array $urls)
+    {
+        $urls = array_unique($urls);
+        try {
+            if($project->strategy === Project::GA_STRATEGY){
+                if($project->ga_property_id) {
+                    $dimensions = ['pagePath'];
+                    $metrics = ['totalRevenue', 'averagePurchaseRevenue', 'engagementRate', 'conversions', 'sessions'];
+
+                    $period = CarbonPeriod::create(Carbon::now()->subMonth(16)->format('Y-m-d'), Carbon::now());
+                    $urlData = [];
+
+                    foreach ($period as $date) {
+                        $date = $date->format('Y-m-d');
+
+                        $response = $this->makeGAApiCall($project->ga_property_id, $dimensions, $metrics, $date, $date);
+                        $result = $this->formatGAResponse($response, $project->domain, $date);
+
+                        if (!empty($result)) {
+                            foreach ($result as $url => $data) {
+                                $result[$url]['bounce_rate'] = 1 - $data['engagementRate'];
+                                $result[$url]['bounce_rate'] = (string)$result[$url]['bounce_rate'];
+                                $result[$url]['ecom_conversion_rate'] = $data['sessions'] == 0 ? 0 : $data['conversions'] / $data['sessions'];
+                                $result[$url]['ecom_conversion_rate'] = (string)$result[$url]['ecom_conversion_rate'];
+
+                                if (isset($result[$url]['totalRevenue'])) {
+                                    $result[$url]['revenue'] = $result[$url]['totalRevenue'];
+                                    unset($result[$url]['totalRevenue']);
+                                }
+
+                                if (isset($result[$url]['averagePurchaseRevenue'])) {
+                                    $result[$url]['avg_order_value'] = $result[$url]['averagePurchaseRevenue'];
+                                    unset($result[$url]['averagePurchaseRevenue']);
+                                }
+
+                                unset($result[$url]['engagementRate']);
+                                unset($result[$url]['conversions']);
+                                unset($result[$url]['sessions']);
+                            }
+
+                            $urlData = $this->handleGAResult($urlData, $result, $urls);
+                        }
+                    }
+                }
+            } else if($project->strategy === Project::UA_STRATEGY){
+                if($project->ua_view_id) {
+                    $metrics = [
+                        ['expression' => "ga:bounceRate", 'alias' => 'bounceRate'],
+                        ['expression' => "ga:transactionsPerSession", 'alias' => 'conversionRate'],
+                        ['expression' => "ga:transactionRevenue", 'alias' => 'revenue'],
+                        ['expression' => "ga:revenuePerTransaction", 'alias' => 'avgOrderValue'],
+                    ];
+
+                    $period = CarbonPeriod::create(Carbon::now()->subMonth(16)->format('Y-m-d'), Carbon::now());
+                    $urlData = [];
+
+                    foreach ($period as $date) {
+                        $date = $date->format('Y-m-d');
+                        $result = $this->parseUAResults($this->getReport($project->ua_property_id, $project->ua_view_id, $metrics, $date, $date), $date);
+
+                        $urlData = $this->handleGAResult($urlData, $result, $urls);
+                    }
+
+                }
+            }
+            if(isset($urlData)) {
+                $this->saveGaResults($urlData);
+            }
+        } catch (Throwable $e) {
+            throw new Exception($e->getMessage());
+        }
+    }
+
+    /**
+     * @param $urlData
+     * @param $result
+     * @param $urls
+     * @return array
+     */
+    protected function handleGAResult ($urlData, $result, $urls): array
+    {
+        foreach ($result as $url => $urlRow) {
+            if (!in_array($url, $urls)) {
+                $url2 = $url;
+
+                if (substr($url, -1) === '/') {
+                    $url2 = rtrim($url, "/ ");
+                } else {
+                    $url2 .= '/';
+                }
+
+                if (!in_array($url2, $urls)) {
+                    unset($result[$url]);
+                }
+            }
+        }
+
+        foreach ($result as $url => $data) {
+            if(isset($data['date'])) {
+                $urlData[$url][$data['date']] = $data;
+            }
+        }
+        return $urlData;
+    }
+
+    /**
+     * @param array $result
+     * @return void
+     */
+    protected function saveGaResults(array $result)
+    {
+        $upsert = [];
+        foreach ($result as $k=> $v) {
+            $url = URL::whereUrl($k)->first();
+
+            if(!$url) {
+                $url = URL::whereUrl($k . '/')->first();
+            }
+
+            if(!$url) {
+                $url = URL::whereUrl(rtrim($k, "/ "))->first();
+            }
+
+            if($url) {
+                foreach ($v as $date => $data) {
+                    if(empty($data)) {
+                        $data = [
+                            'ecom_conversion_rate' => 0,
+                            'revenue' => 0,
+                            'avg_order_value' => 0,
+                            'bounce_rate' => 0,
+                            'date' => $date,
+                        ];
+                    }
+                    $data['url_id'] = $url->id;
+                    $upsert[] = $data;
+                }
+            }
+        }
+
+        UrlData::upsert($upsert, ['url_id', 'date'], ['ecom_conversion_rate', 'revenue', 'avg_order_value', 'bounce_rate']);
+    }
+
+    /**
+     * @param array $urls
+     * @param array $keywords
+     * @param Project $project
+     * @return array
+     * @throws Exception
+     */
+    public function expandGSC(array $urls, array $keywords, Project $project): array
+    {
+        try {
+            $result = [];
+
+            $client = $this->getGSCAuthorizedClient();
+
+            $serviceWebmasters = new Google_Service_Webmasters( $client );
+
+            if(is_countable($serviceWebmasters->sites->listSites()->getSiteEntry())) {
+                foreach ($serviceWebmasters->sites->listSites()->getSiteEntry() as $site) {
+
+                    if($site->getSiteUrl() == $project->domain
+                        || $site->getSiteUrl() == $project->domain . '/'
+                        || $site->getSiteUrl() == "http://" . $project->domain . '/'
+                        || $site->getSiteUrl() == "https://" . $project->domain . '/'
+                        || $site->getSiteUrl() == "http://" . $project->domain
+                        || $site->getSiteUrl() == "https://" . $project->domain
+                    ) {
+                        $postBody = new Webmasters\SearchAnalyticsQueryRequest( [
+                            'startDate'  => Carbon::now()->subMonth(16)->format('Y-m-d'),
+                            'endDate'    => Carbon::now()->format('Y-m-d'),
+                            'dimensions' => [
+                                'page',   // $row->getKeys()[0]
+                                'query',  // $row->getKeys()[1]
+                                'date'    // $row->getKeys()[2]
+                            ],
+                        ] );
+
+                        $searchAnalyticsResponse = $serviceWebmasters->searchanalytics->query($site->getSiteUrl(), $postBody);
+
+                        foreach ($searchAnalyticsResponse->getRows() as $row) {
+                            if($row->getKeys() && in_array($row->getKeys()[0], $urls) && in_array($row->getKeys()[1], $keywords)) {
+                                $result[$row->getKeys()[0]][$row->getKeys()[1]][$row->getKeys()[2]]['clicks'] = $row->getClicks();
+                                $result[$row->getKeys()[0]][$row->getKeys()[1]][$row->getKeys()[2]]['impressions'] = $row->getImpressions();
+                                $result[$row->getKeys()[0]][$row->getKeys()[1]][$row->getKeys()[2]]['ctr'] = $row->getCtr();
+                                $result[$row->getKeys()[0]][$row->getKeys()[1]][$row->getKeys()[2]]['position'] = $row->getPosition();
+                            }
+                        }
+                    }
+                }
+            }
+
+            $this->saveGSCResults($result);
+        } catch(Throwable $e ) {
+            throw new Exception($e->getMessage());
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param array $result
+     * @return void
+     */
+    protected function saveGSCResults(array $result)
+    {
+        $upsert = [];
+        foreach ($result as $site => $item) {
+            $url = URL::whereUrl($site)->first();
+
+            if(!$url) {
+                $url = URL::whereUrl($site . '/')->first();
+            }
+            if(!$url) {
+                $url = URL::whereUrl(rtrim($site, "/ "))->first();
+            }
+
+            if($url) {
+                foreach ($item as $keyword => $dates) {
+                    $keyword = Keyword::whereKeyword($keyword)->first();
+                    if($keyword) {
+                        foreach ($dates as $date => $data) {
+                            if (empty($data)) {
+                                $data = [
+                                    'position' => 0,
+                                    'clicks' => 0,
+                                    'impressions' => 0,
+                                    'ctr' => 0,
+                                    'date' => $date,
+                                ];
+                            }
+
+                            $model = UrlKeyword::whereUrlId($url->id)->where('keyword_id', $keyword->id)->first();
+
+                            if($model) {
+                                $data['url_keyword_id'] = $model->id;
+                                $upsert[] = $data;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        UrlKeywordData::upsert($upsert, ['url_keyword_id', 'date'], ['position', 'clicks', 'impressions', 'ctr']);
     }
 }
 

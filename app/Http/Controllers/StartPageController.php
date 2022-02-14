@@ -7,6 +7,7 @@ use Google\Service\Webmasters;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Google\Client;
+use Illuminate\Http\UploadedFile;
 
 class StartPageController extends Controller
 {
@@ -34,8 +35,55 @@ class StartPageController extends Controller
 
     public function handle(Request $request): RedirectResponse
     {
-        dd($request->request);
+        $fields = $request->validate([
+            'analyticsCreds' => 'file',
+            'gscCreds' => 'file',
+            'accessToken' => 'file',
+            'AuthCode' => 'string|nullable',
+            'refreshToken' => 'string|nullable',
+        ]);
 
-        return redirect()->back();
+        if($request->analyticsCreds instanceof UploadedFile ){
+            $fileName = GoogleAnalyticsService::getAnalyticCredsPath();
+            $dir = explode(DIRECTORY_SEPARATOR, $fileName);
+            $fileName = array_pop($dir);
+            $dir = implode(DIRECTORY_SEPARATOR, $dir);
+            $request->analyticsCreds->move($dir, $fileName);
+        }
+
+        if($request->gscCreds instanceof UploadedFile ){
+            $fileName = GoogleAnalyticsService::getGSCOAuthCredsPath();
+            $dir = explode(DIRECTORY_SEPARATOR, $fileName);
+            $fileName = array_pop($dir);
+            $dir = implode(DIRECTORY_SEPARATOR, $dir);
+            $request->gscCreds->move($dir, $fileName);
+        }
+
+        if($request->accessToken instanceof UploadedFile ){
+            $fileName = GoogleAnalyticsService::getAccessTokenPath();
+            $dir = explode(DIRECTORY_SEPARATOR, $fileName);
+            $fileName = array_pop($dir);
+            $dir = implode(DIRECTORY_SEPARATOR, $dir);
+            $request->accessToken->move($dir, $fileName);
+        }
+
+        if($request->AuthCode){
+            $authCodePath = GoogleAnalyticsService::getAuthCodePath();
+            if (!file_exists(dirname($authCodePath))) {
+                mkdir(dirname($authCodePath), 0700, true);
+            }
+            file_put_contents($authCodePath, $request->AuthCode);
+        }
+
+        if($request->refreshToken){
+            $refreshTokenPath = GoogleAnalyticsService::getRefreshTokenPath();
+            if (!file_exists(dirname($refreshTokenPath))) {
+                mkdir(dirname($refreshTokenPath), 0700, true);
+            }
+
+            file_put_contents($refreshTokenPath, $request->refreshToken);
+        }
+
+        return redirect()->back()->with(['success' => 'Operation Successfully']);
     }
 }

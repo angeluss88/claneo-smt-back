@@ -24,10 +24,21 @@
                 color: #0969da;
                 text-decoration: underline;
             }
+            .alert-success strong{
+                color: green;
+            }
         </style>
     </head>
     <body>
-    <form name="startAppData" method="POST">
+    <p>
+        <a href="/api/documentation">Go to API Docs</a>
+    </p>
+    @if ($message = Session::get('success'))
+        <div class="alert alert-success alert-block">
+            <strong>{{ $message }}</strong>
+        </div>
+    @endif
+    <form name="startAppData" method="POST" enctype="multipart/form-data">
         @csrf
         <div class="credentials_block">
             <p class="creds_block_label">
@@ -62,20 +73,19 @@
                 <p>
                     Click this link and follow instructions to auth your env
                     (
-                    <span class="{{ $gsc_oauth_creds_exists ? 'green_colored' : 'red_colored' }}">
-                        {{ $gsc_oauth_creds_exists ? 'Already Done' : 'Not done yet' }}
+                    <span class="{{ $gsc_auth_code_exists ? 'green_colored' : 'red_colored' }}">
+                        {{ $gsc_auth_code_exists ? 'Already Done' : 'Not done yet' }}
                     </span>
                     )
                     :
                 </p>
                 <p><a href="{{ $gsc_auth_url }}" target="_blank" >Click Me</a></p>
             </div>
-        @endif
         <div class="credentials_block">
             <p class="creds_block_label">
                 <label for="authCode">
                     Put Your Google Search Console Authorization Code here (
-                    <span class="{{ $analytics_creds_exists ? 'green_colored' : 'red_colored' }}">
+                    <span class="{{ $gsc_auth_code_exists ? 'green_colored' : 'red_colored' }}">
                         {{ $gsc_auth_code_exists ? 'Exists' : 'Does not exists' }}
                     </span>
                     )
@@ -107,8 +117,8 @@
             <p class="creds_block_label">
                 <label for="accessToken">
                     Upload Google search console Access Token  (
-                    <span class="{{ $analytics_creds_exists ? 'green_colored' : 'red_colored' }}">
-                        {{ $analytics_creds_exists ? 'Exists' : 'Does not exists' }}
+                    <span class="{{ $gsc_access_token_exists ? 'green_colored' : 'red_colored' }}">
+                        {{ $gsc_access_token_exists ? 'Exists' : 'Does not exists' }}
                     </span>
                     )
                 </label>
@@ -117,6 +127,7 @@
                 <input id="accessToken" name="accessToken" type="file" accept="application/json" />
             </p>
         </div>
+        @endif
         <div class="submit_block">
             <button>Submit</button>
         </div>
