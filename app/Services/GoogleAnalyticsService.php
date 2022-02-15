@@ -657,6 +657,7 @@ class GoogleAnalyticsService
 
                             if($model) {
                                 $data['url_keyword_id'] = $model->id;
+                                $data['date'] = $date;
                                 $upsert[] = $data;
                             }
                         }
