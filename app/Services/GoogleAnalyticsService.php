@@ -268,8 +268,6 @@ class GoogleAnalyticsService
 
         $client->addScope(Webmasters::WEBMASTERS_READONLY);
 
-        $protocol = stripos($_SERVER['SERVER_PROTOCOL'],'https') === 0 ? 'https://' : 'http://';
-        $client->setRedirectUri($protocol . $_SERVER['HTTP_HOST']);
         $client->setAccessType('offline');
         $client->setPrompt('select_account consent');
 
