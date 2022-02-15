@@ -22,7 +22,8 @@ class StartPageController extends Controller
             $client = new Client();
             $client->setAuthConfig(GoogleAnalyticsService::getGSCOAuthCredsPath());
             $client->addScope(Webmasters::WEBMASTERS_READONLY);
-            $client->setPrompt('select_account consent');
+            $client->setAccessType('offline');
+            $client->setPrompt('consent');
             $data['gsc_auth_url'] = $client->createAuthUrl();
         }
 
