@@ -639,7 +639,8 @@ class GoogleAnalyticsService
             if($url) {
                 foreach ($item as $keyword => $dates) {
                     $keyword = Keyword::whereKeyword($keyword)->first();
-                    if($keyword) {
+                    $model = UrlKeyword::whereUrlId($url->id)->where('keyword_id', $keyword->id)->first();
+                    if($keyword && $model) {
                         foreach ($dates as $date => $data) {
                             if (empty($data)) {
                                 $data = [
@@ -647,17 +648,13 @@ class GoogleAnalyticsService
                                     'clicks' => 0,
                                     'impressions' => 0,
                                     'ctr' => 0,
-                                    'date' => $date,
                                 ];
                             }
 
-                            $model = UrlKeyword::whereUrlId($url->id)->where('keyword_id', $keyword->id)->first();
+                            $data['url_keyword_id'] = $model->id;
+                            $data['date'] = $date;
+                            $upsert[] = $data;
 
-                            if($model) {
-                                $data['url_keyword_id'] = $model->id;
-                                $data['date'] = $date;
-                                $upsert[] = $data;
-                            }
                         }
                     }
                 }
