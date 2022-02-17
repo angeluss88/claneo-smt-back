@@ -9,11 +9,9 @@ use App\Models\UrlData;
 use App\Models\UrlKeyword;
 use App\Models\UrlKeywordData;
 use Carbon\Carbon;
-use Carbon\CarbonPeriod;
 use Google\Analytics\Data\V1beta\BetaAnalyticsDataClient;
 use Google\Analytics\Data\V1beta\DateRange;
 use Google\Analytics\Data\V1beta\Dimension;
-use Google\Analytics\Data\V1beta\DimensionValue;
 use Google\Analytics\Data\V1beta\Metric;
 use Google\Analytics\Data\V1beta\RunReportResponse;
 use Google\ApiCore\ApiException;
@@ -42,9 +40,9 @@ class GoogleAnalyticsService
     public $accountId = '109167922';
     const SERVICE_ACCOUNT = 'starting-account-bfkqmhlvx8j0';
     const PAGE_DIMENSION = 'ga:pagePath';
+    const DATE_DIMENSION = 'ga:date';
     const GOOGLE_OAUTH_TOKEN_URL = 'https://accounts.google.com/o/oauth2/token';
     const METHOD_POST = 'POST';
-    const METHOD_GET = 'GET';
 
         public function __construct ()
     {
@@ -109,15 +107,15 @@ class GoogleAnalyticsService
     }
 
     /**
-     * @param $propertyId
      * @param $viewId
      * @param $metrics
+     * @param $dimensions
      * @param $start_date
      * @param $end_date
      * @return GetReportsResponse
      * @throws Exception
      */
-    public function getReport($propertyId, $viewId, $metrics, $start_date, $end_date): GetReportsResponse
+    public function getReport($viewId, $metrics, $dimensions, $start_date, $end_date): GetReportsResponse
     {
         $this->reportings = $this->getAuthorizedReportingObject();
         // Create the DateRange object.
@@ -141,7 +139,7 @@ class GoogleAnalyticsService
         $request->setViewId($viewId);
         $request->setDateRanges($dateRange);
         $request->setMetrics($metricsData);
-        $request->setDimensions(['name' => self::PAGE_DIMENSION]);
+        $request->setDimensions($dimensions);
 
         $body = new Google_Service_AnalyticsReporting_GetReportsRequest();
         $body->setReportRequests(array($request));
@@ -152,7 +150,7 @@ class GoogleAnalyticsService
     /**
      * @throws \Exception
      */
-    public function parseUAResults(GetReportsResponse $reports, $date): array
+    public function parseUAResults(GetReportsResponse $reports): array
     {
         $keyNames = [
             'conversionRate' => 'ecom_conversion_rate',
@@ -165,16 +163,7 @@ class GoogleAnalyticsService
         foreach ($reports as $report) {
             $header = $report->getColumnHeader();
             $dimensionHeaders = $header->getDimensions();
-            foreach ($dimensionHeaders as $key => $dimensionHeader) {
-                if ($dimensionHeader === self::PAGE_DIMENSION) {
-                    $pageDimensionKey = $key;
-                }
-            }
-
-            if(!isset($pageDimensionKey)) {
-                throw new \Exception('Dimension error');
-            }
-
+            $dimensionHeaders = array_flip($dimensionHeaders);
             $metricHeaders = $header->getMetricHeader()->getMetricHeaderEntries();
             $rows = $report->getData()->getRows();
 
@@ -182,9 +171,11 @@ class GoogleAnalyticsService
                 $metrics = $row->getMetrics();
                 $dimensions = $row->getDimensions();
 
-                $dimension = $dimensions[$pageDimensionKey];
+                $pageDimension = $dimensions[$dimensionHeaders[self::PAGE_DIMENSION]];
+                $dateDimension = $dimensions[$dimensionHeaders[self::DATE_DIMENSION]];
+                $dateDimension = Carbon::createFromFormat('Ymd', $dateDimension)->format('Y-m-d');
 
-                if($dimension) {
+                if($pageDimension && $dateDimension) {
                     $item = [];
                     foreach ($metrics as $metric) {
                         foreach ($metric->getValues() as $k => $value) {
@@ -193,16 +184,14 @@ class GoogleAnalyticsService
                         }
                     }
 
-                    $item['date'] = $date;
-                    $result[$dimension] = $item;
+                    $result[$pageDimension][$dateDimension] = $item;
                 }
             }
         }
-
         return $result;
     }
 
-    public function formatGAResponse($response, $domain, $date): array
+    public function formatGAResponse($response, $domain): array
     {
         $result = [];
         $metricHeaders = $response->getMetricHeaders();
@@ -214,12 +203,13 @@ class GoogleAnalyticsService
 
         foreach ($response->getRows() as $row) {
             $dimensionValues = $row->getDimensionValues();
-            if(isset($dimensionValues[0]) && $dimensionValues[0] instanceof DimensionValue) {
+            if(isset($dimensionValues[0]) && isset($dimensionValues[1])) {
                 $url = rtrim($domain, "/ ") . $dimensionValues[0]->getValue();
+                $date = Carbon::createFromFormat('Ymd', $dimensionValues[1]->getValue())->format('Y-m-d');
+
                 foreach ($row->getMetricValues() as $k => $v) {
-                    $result[$url][$metricNames[$k]] = $v->getValue();
+                    $result[$url][$date][$metricNames[$k]] = $v->getValue();
                 }
-                $result[$url]['date'] = $date;
             }
         }
 
@@ -400,7 +390,6 @@ class GoogleAnalyticsService
             CURLOPT_CUSTOMREQUEST => $method,
             CURLOPT_HTTPHEADER => array(
                 'Content-Type: application/x-www-form-urlencoded',
-//                'Cookie: __Host-GAPS=1:yehutPjWLkKk1sHcXLstjifRWJKo2w:pD8uRL2a_tTy_fh9'
             ),
         ));
         if($method === self::METHOD_POST) {
@@ -424,42 +413,39 @@ class GoogleAnalyticsService
         try {
             if($project->strategy === Project::GA_STRATEGY){
                 if($project->ga_property_id) {
-                    $dimensions = ['pagePath'];
+                    $dimensions = ['pagePath', 'date'];
                     $metrics = ['totalRevenue', 'averagePurchaseRevenue', 'engagementRate', 'conversions', 'sessions'];
 
-                    $period = CarbonPeriod::create(Carbon::now()->subMonth(16)->format('Y-m-d'), Carbon::now());
-                    $urlData = [];
+                    $date = Carbon::now()->subMonth(16)->format('Y-m-d');
 
-                    foreach ($period as $date) {
-                        $date = $date->format('Y-m-d');
+                    $response = $this->makeGAApiCall($project->ga_property_id, $dimensions, $metrics, $date);
+                    $result = $this->formatGAResponse($response, $project->domain);
 
-                        $response = $this->makeGAApiCall($project->ga_property_id, $dimensions, $metrics, $date, $date);
-                        $result = $this->formatGAResponse($response, $project->domain, $date);
+                    if (!empty($result)) {
+                        foreach ($result as $url => $item) {
+                            foreach ($item as $date => $data) {
+                                $result[$url][$date]['bounce_rate'] = 1 - $data['engagementRate'];
+                                $result[$url][$date]['bounce_rate'] = (string)$result[$url][$date]['bounce_rate'];
+                                $result[$url][$date]['ecom_conversion_rate'] = $data['sessions'] == 0 ? 0 : $data['conversions'] / $data['sessions'];
+                                $result[$url][$date]['ecom_conversion_rate'] = (string)$result[$url][$date]['ecom_conversion_rate'];
 
-                        if (!empty($result)) {
-                            foreach ($result as $url => $data) {
-                                $result[$url]['bounce_rate'] = 1 - $data['engagementRate'];
-                                $result[$url]['bounce_rate'] = (string)$result[$url]['bounce_rate'];
-                                $result[$url]['ecom_conversion_rate'] = $data['sessions'] == 0 ? 0 : $data['conversions'] / $data['sessions'];
-                                $result[$url]['ecom_conversion_rate'] = (string)$result[$url]['ecom_conversion_rate'];
-
-                                if (isset($result[$url]['totalRevenue'])) {
-                                    $result[$url]['revenue'] = $result[$url]['totalRevenue'];
-                                    unset($result[$url]['totalRevenue']);
+                                if (isset($result[$url][$date]['totalRevenue'])) {
+                                    $result[$url][$date]['revenue'] = $result[$url][$date]['totalRevenue'];
+                                    unset($result[$url][$date]['totalRevenue']);
                                 }
 
-                                if (isset($result[$url]['averagePurchaseRevenue'])) {
-                                    $result[$url]['avg_order_value'] = $result[$url]['averagePurchaseRevenue'];
-                                    unset($result[$url]['averagePurchaseRevenue']);
+                                if (isset($result[$url][$date]['averagePurchaseRevenue'])) {
+                                    $result[$url][$date]['avg_order_value'] = $result[$url][$date]['averagePurchaseRevenue'];
+                                    unset($result[$url][$date]['averagePurchaseRevenue']);
                                 }
 
-                                unset($result[$url]['engagementRate']);
-                                unset($result[$url]['conversions']);
-                                unset($result[$url]['sessions']);
+                                unset($result[$url][$date]['engagementRate']);
+                                unset($result[$url][$date]['conversions']);
+                                unset($result[$url][$date]['sessions']);
                             }
-
-                            $urlData = $this->handleGAResult($urlData, $result, $urls);
                         }
+
+                        $this->handleGAResult($result, $urls);
                     }
                 }
             } else if($project->strategy === Project::UA_STRATEGY){
@@ -471,20 +457,16 @@ class GoogleAnalyticsService
                         ['expression' => "ga:revenuePerTransaction", 'alias' => 'avgOrderValue'],
                     ];
 
-                    $period = CarbonPeriod::create(Carbon::now()->subMonth(16)->format('Y-m-d'), Carbon::now());
-                    $urlData = [];
+                    $dimensions = [
+                        ['name' => self::PAGE_DIMENSION],
+                        ['name' => self::DATE_DIMENSION],
+                    ];
 
-                    foreach ($period as $date) {
-                        $date = $date->format('Y-m-d');
-                        $result = $this->parseUAResults($this->getReport($project->ua_property_id, $project->ua_view_id, $metrics, $date, $date), $date);
-
-                        $urlData = $this->handleGAResult($urlData, $result, $urls);
-                    }
-
+                    $date = Carbon::now()->subMonth(16)->format('Y-m-d');
+                    $result = $this->getReport($project->ua_view_id, $metrics, $dimensions, $date, Carbon::now()->format('Y-m-d'));
+                    $result = $this->parseUAResults($result);
+                    $this->handleGAResult($result, $urls);
                 }
-            }
-            if(isset($urlData)) {
-                $this->saveGaResults($urlData);
             }
         } catch (Throwable $e) {
             throw new Exception($e->getMessage());
@@ -492,14 +474,13 @@ class GoogleAnalyticsService
     }
 
     /**
-     * @param $urlData
      * @param $result
      * @param $urls
-     * @return array
      */
-    protected function handleGAResult ($urlData, $result, $urls): array
+    protected function handleGAResult ($result, $urls)
     {
-        foreach ($result as $url => $urlRow) {
+        $urlData = [];
+        foreach ($result as $url => $item) {
             if (!in_array($url, $urls)) {
                 $url2 = $url;
 
@@ -510,17 +491,37 @@ class GoogleAnalyticsService
                 }
 
                 if (!in_array($url2, $urls)) {
-                    unset($result[$url]);
+                    continue;
+                }
+            }
+            $url = URL::whereUrl($url)->first();
+
+            if(!$url) {
+                $url = URL::whereUrl($url . '/')->first();
+            }
+
+            if(!$url) {
+                $url = URL::whereUrl(rtrim($url, "/ "))->first();
+            }
+
+            if($url) {
+                foreach ($item as $date => $data) {
+                    if(empty($data)) {
+                        $data = [
+                            'ecom_conversion_rate' => 0,
+                            'revenue' => 0,
+                            'avg_order_value' => 0,
+                            'bounce_rate' => 0,
+                        ];
+                    }
+                    $data['date'] = $date;
+                    $data['url_id'] = $url->id;
+                    $urlData[] = $data;
                 }
             }
         }
 
-        foreach ($result as $url => $data) {
-            if(isset($data['date'])) {
-                $urlData[$url][$data['date']] = $data;
-            }
-        }
-        return $urlData;
+        UrlData::upsert($urlData, ['url_id', 'date'], ['ecom_conversion_rate', 'revenue', 'avg_order_value', 'bounce_rate']);
     }
 
     /**
