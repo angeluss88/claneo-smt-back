@@ -40,6 +40,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::resource('clients', ClientController::class);
     Route::resource('projects', ProjectController::class);
     Route::resource('urls', UrlController::class);
+    Route::get('/urls_aggregation', [UrlController::class, 'urlAggregation']);
     Route::resource('keywords', KeywordController::class);
 
     Route::post('/import_strategy', [ImportStrategyController::class, 'import'])->middleware('role:admin,SEO,Researcher');

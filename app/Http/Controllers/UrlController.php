@@ -10,6 +10,7 @@ use Auth;
 use DateTime;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
@@ -271,7 +272,7 @@ class UrlController extends Controller
             ];
             $categoriesFilter = [];
 
-            foreach ($categories as $k => $category) {
+            foreach ($categories as $category) {
                 $category = explode(':', $category);
 
                 if( count($category) == 2
@@ -289,35 +290,7 @@ class UrlController extends Controller
         }
 
         if($request->import_date) {
-            $importDates = explode('-', $request->import_date);
-            if(count($importDates) == 2) {
-                $from = DateTime::createFromFormat('Y.m.d', $importDates[0]);
-                $to = DateTime::createFromFormat('Y.m.d', $importDates[1]);
-                if($from && $to) {
-                    $url->with([
-                        'urlData' => function (HasMany $query) use ($from, $to) {
-                            if ($from->format('Y-m-d') == $to->format('Y-m-d')) {
-                                $query->where('date', "=", $from->format('Y-m-d'));
-                            } else {
-                                $from = date('Y-m-d', strtotime('-1 day', strtotime($from->format('Y-m-d'))));
-                                $from = DateTime::createFromFormat('Y-m-d', $from);
-                                $query->whereBetween('date', [$from, $to]);
-                            }
-                        }
-                    ]);
-                    $url->with([
-                        'urlKeywordData' => function (HasManyThrough $query) use ($from, $to) {
-                            if ($from->format('Y-m-d') == $to->format('Y-m-d')) {
-                                $query->where('date', "=", $from->format('Y-m-d'));
-                            } else {
-                                $from = date('Y-m-d', strtotime('-1 day', strtotime($from->format('Y-m-d'))));
-                                $from = DateTime::createFromFormat('Y-m-d', $from);
-                                $query->whereBetween('date', [$from, $to]);
-                            }
-                        }
-                    ]);
-                }
-            }
+            $url = $this->filterUrlsByDate($request->import_date, $url);
         }
 
         if($request->sort && $request->sort !== '{sort}') {
@@ -374,17 +347,11 @@ class UrlController extends Controller
             }
             if($urlKeywordDataCount !== 0) {
                 $avgPosition /= $urlKeywordDataCount;
-//                $avgClicks /= $urlKeywordDataCount;
-//                $avgImpressions /= $urlKeywordDataCount;
                 $avgCtr /= $urlKeywordDataCount;
             }
 
             foreach ($item->keywords as $keyword) {
                 $avgSearchVolume += $keyword->search_volume;
-            }
-
-            if($item->keywords_count != 0) {
-//                $avgSearchVolume /= $item->keywords_count;
             }
 
             $item->setAttribute('avgConvRate', $avgConvRate);
@@ -404,6 +371,240 @@ class UrlController extends Controller
         return response([
             'urls' => $url,
         ], 200);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/urls_aggregation?project_id={project_id}&date_range={date_range}",
+     *     operationId="urls_aggregation",
+     *     tags={"URLs"},
+     *     summary="URL aggregation data",
+     *     @OA\Response(
+     *         response="200",
+     *         description="Everything is fine",
+     *         @OA\JsonContent(
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="array",
+     *                 collectionFormat="multi",
+     *                 @OA\Items(
+     *                     @OA\Property(
+     *                          property="avgConvRate",
+     *                          type="integer",
+     *                          example=0,
+     *                     ),
+     *                     @OA\Property(
+     *                          property="avgRevenue",
+     *                          type="integer",
+     *                          example=0,
+     *                     ),
+     *                     @OA\Property(
+     *                          property="avgOrderValue",
+     *                          type="integer",
+     *                          example=0,
+     *                     ),
+     *                     @OA\Property(
+     *                          property="avgBounceRate",
+     *                          type="integer",
+     *                          example=0,
+     *                     ),
+     *                     @OA\Property(
+     *                          property="aggrPosition",
+     *                          type="integer",
+     *                          example=0,
+     *                     ),
+     *                     @OA\Property(
+     *                          property="aggrClicks",
+     *                          type="integer",
+     *                          example=0,
+     *                     ),
+     *                     @OA\Property(
+     *                          property="aggrImpressions",
+     *                          type="integer",
+     *                          example=0,
+     *                     ),
+     *                     @OA\Property(
+     *                          property="aggrCtr",
+     *                          type="integer",
+     *                          example=0,
+     *                     ),
+     *                     @OA\Property(
+     *                          property="aggrSearchVolume",
+     *                          type="integer",
+     *                          example=0,
+     *                     )
+     *                 ),
+     *             ),
+     *         ),
+     *     ),
+     *     @OA\Response(
+     *         response="401",
+     *         description="Unauthenticated",
+     *     ),
+     *     @OA\Parameter(
+     *         name="date_range",
+     *         in="path",
+     *         description="Date range (Y.m.d-Y.m.d)",
+     *         required=false,
+     *         example="2021.11.03-2021.12.03",
+     *         @OA\Schema(
+     *             type="string",
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="project_id",
+     *         in="path",
+     *         description="Project filter",
+     *         required=false,
+     *         example=1,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     security={
+     *       {"bearerAuth": {}},
+     *     },
+     * )
+     *
+     * @param Request $request
+     * @return Response
+     */
+    public function urlAggregation (Request $request): Response
+    {
+        $url = URL::with(['project', 'events', 'keywords', 'urlData', 'urlKeywordData']);
+
+        if ($request->project_id && $request->project_id !== '{project_id}') {
+            $url->where('project_id', (int) $request->project_id);
+        }
+
+        if($request->date_range) {
+            $url = $this->filterUrlsByDate($request->date_range, $url);
+        }
+
+        $data = [];
+        $avgConvRate = 0;
+        $avgRevenue = 0;
+        $avgOrderValue = 0;
+        $avgBounceRate = 0;
+
+        $aggrPosition = 0;
+        $aggrClicks = 0;
+        $aggrImpressions = 0;
+        $aggrCtr = 0;
+        $aggrSearchVolume = 0;
+
+        foreach ($url->get() as $item) {
+            /**
+             * @var UrlData $urlData
+             * @var URL $item
+             */
+            foreach ($item->urlData as $urlData) {
+                $avgConvRate += $urlData->ecom_conversion_rate;
+                $avgRevenue += $urlData->revenue;
+                $avgOrderValue += $urlData->avg_order_value;
+                $avgBounceRate += $urlData->bounce_rate;
+            }
+
+            $urlKeywordDataCount = 0;
+            $avgPosition = 0;
+            $avgClicks = 0;
+            $avgImpressions = 0;
+            $avgCtr = 0;
+            $avgSearchVolume = 0;
+
+            /**
+             * @var UrlKeywordData $urlKeywordData
+             */
+            foreach ($item->urlKeywordData as $urlKeywordData) {
+                $avgPosition += $urlKeywordData->position;
+                $avgClicks += $urlKeywordData->clicks;
+                $avgImpressions += $urlKeywordData->impressions;
+                $avgCtr += $urlKeywordData->ctr;
+
+                $urlKeywordDataCount++;
+            }
+
+            if($urlKeywordDataCount !== 0) {
+                $avgPosition /= $urlKeywordDataCount;
+                $avgCtr /= $urlKeywordDataCount;
+            }
+
+            foreach ($item->keywords as $keyword) {
+                $avgSearchVolume += $keyword->search_volume;
+            }
+
+            $aggrPosition =  $avgPosition;
+            $aggrClicks +=  $avgClicks;
+            $aggrImpressions =  $avgImpressions;
+            $aggrCtr =  $avgCtr;
+            $aggrSearchVolume +=  $avgSearchVolume;
+        }
+
+        if($url->count() !== 0) {
+            $avgConvRate /= $url->count();
+            $avgOrderValue /= $url->count();
+            $avgBounceRate /= $url->count();
+        }
+
+        $data['avgConvRate'] =  $avgConvRate;
+        $data['avgRevenue'] =  $avgRevenue;
+        $data['avgOrderValue'] =  $avgOrderValue;
+        $data['avgBounceRate'] =  $avgBounceRate;
+
+        if($url->count() !== 0) {
+            $aggrClicks /= $url->count();
+            $aggrCtr /= $url->count();
+        }
+
+        $data['aggrPosition'] =  $aggrPosition;
+        $data['aggrClicks'] =  $aggrClicks;
+        $data['aggrImpressions'] =  $aggrImpressions;
+        $data['aggrCtr'] =  $aggrCtr;
+        $data['aggrSearchVolume'] =  $aggrCtr;
+
+        return response([
+            'data' => $data,
+        ], 200);
+    }
+
+    /**
+     * @param $date_range
+     * @param Builder $url
+     * @return Builder
+     */
+    protected function filterUrlsByDate($date_range, Builder $url): Builder
+    {
+        $dates = explode('-', $date_range);
+        if(count($dates) == 2) {
+            $from = DateTime::createFromFormat('Y.m.d', $dates[0]);
+            $to = DateTime::createFromFormat('Y.m.d', $dates[1]);
+            if($from && $to) {
+                $url->with([
+                    'urlData' => function (HasMany $query) use ($from, $to) {
+                        if ($from->format('Y-m-d') == $to->format('Y-m-d')) {
+                            $query->where('date', "=", $from->format('Y-m-d'));
+                        } else {
+                            $from = date('Y-m-d', strtotime('-1 day', strtotime($from->format('Y-m-d'))));
+                            $from = DateTime::createFromFormat('Y-m-d', $from);
+                            $query->whereBetween('date', [$from, $to]);
+                        }
+                    }
+                ]);
+                $url->with([
+                    'urlKeywordData' => function (HasManyThrough $query) use ($from, $to) {
+                        if ($from->format('Y-m-d') == $to->format('Y-m-d')) {
+                            $query->where('date', "=", $from->format('Y-m-d'));
+                        } else {
+                            $from = date('Y-m-d', strtotime('-1 day', strtotime($from->format('Y-m-d'))));
+                            $from = DateTime::createFromFormat('Y-m-d', $from);
+                            $query->whereBetween('date', [$from, $to]);
+                        }
+                    }
+                ]);
+            }
+        }
+
+        return $url;
     }
 
     /**
