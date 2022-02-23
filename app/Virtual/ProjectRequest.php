@@ -87,5 +87,15 @@ class ProjectRequest
      * @var string
      */
     public $strategy;
-}
 
+    /**
+     * @OA\Property(
+     *     title="expand_gsc",
+     *     description="Expand GSC",
+     *     example=1
+     * )
+     *
+     * @var string
+     */
+    public $expand_gsc;
+}

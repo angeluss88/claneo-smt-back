@@ -243,6 +243,10 @@ class ProjectController extends Controller
                 'max:255',
                 Rule::in([ Project::GA_STRATEGY, Project::UA_STRATEGY, Project::NO_EXPAND_STRATEGY]),
             ],
+            'expand_gsc'  => [
+                'required',
+                Rule::in([ 0,1 ]),
+            ],
         ]);
 
         $project = Project::create([
@@ -252,6 +256,7 @@ class ProjectController extends Controller
             'ua_view_id' => $fields['ua_view_id'] ?? '',
             'client_id' => $fields['client_id'] ?? Client::where('name', $fields['client'])->firstOrFail()->id,
             'strategy' => $fields['strategy'] ?? Project::NO_EXPAND_STRATEGY,
+            'expand_gsc' => $fields['expand_gsc'] ?? 0,
         ]);
 
         return response([
@@ -374,6 +379,10 @@ class ProjectController extends Controller
                 'max:255',
                 Rule::in([ Project::GA_STRATEGY, Project::UA_STRATEGY, Project::NO_EXPAND_STRATEGY]),
             ],
+            'expand_gsc'  => [
+                Rule::in([ 0,1 ]),
+            ],
+
         ]);
 
         $project->fill($fields)->save();

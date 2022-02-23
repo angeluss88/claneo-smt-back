@@ -496,7 +496,9 @@ class ImportStrategyController extends Controller
                 $this->ga->expandGA($project, $urlsToExpand);
             }
 
-            $this->ga->expandGSC($urlsToExpand, $keywordsToExpand, $project);
+            if($project->expand_gsc) {
+                $this->ga->expandGSC($urlsToExpand, $keywordsToExpand, $project);
+            }
 
         } catch (Throwable $e) {
             throw new Exception($e->getMessage());
