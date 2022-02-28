@@ -9,12 +9,19 @@ use App\Models\URL;
 use App\Services\GoogleAnalyticsService;
 use Auth;
 use Exception;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Throwable;
 use Validator;
+use DateTime;
+use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class ImportStrategyController extends Controller
 {
@@ -625,5 +632,215 @@ class ImportStrategyController extends Controller
         }
 
         return $csv;
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/content_strategy_data?page={page}&count={count}&url={url}&keyword={keyword}&import_date={import_date}&project_id={project_id}&import_id={import_id}",
+     *     operationId="content_strategy_data",
+     *     tags={"Content Strategy"},
+     *     summary="Handled content strategy data",
+     *     @OA\Response(
+     *         response="200",
+     *         description="Everything is fine",
+     *         @OA\JsonContent(
+     *             @OA\Property(
+     *                 property="count",
+     *                 type="integer",
+     *                 example=99,
+     *             ),
+     *             @OA\Property(
+     *                 property="page",
+     *                 type="integer",
+     *                 example=1,
+     *             ),
+     *             @OA\Property(
+     *                 property="pages",
+     *                 type="integer",
+     *                 example=10,
+     *             ),
+     *             @OA\Property(
+     *                 property="perPage",
+     *                 type="integer",
+     *                 example=10,
+     *             ),
+     *             @OA\Property(
+     *                 property="csData",
+     *                 type="array",
+     *                 collectionFormat="multi",
+     *                 @OA\Items(ref="#/components/schemas/CsResource"),
+     *             ),
+     *         ),
+     *     ),
+     *     @OA\Response(
+     *         response="401",
+     *         description="Unauthenticated",
+     *     ),
+     *     @OA\Parameter(
+     *         name="page",
+     *         in="path",
+     *         description="The page",
+     *         required=false,
+     *         example=1,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="count",
+     *         in="path",
+     *         description="Count of rows",
+     *         required=false,
+     *         example=10,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="keyword",
+     *         in="path",
+     *         description="Keyword",
+     *         required=false,
+     *         example="",
+     *         @OA\Schema(
+     *             type="string",
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="url",
+     *         in="path",
+     *         description="Url",
+     *         required=false,
+     *         example="",
+     *         @OA\Schema(
+     *             type="string",
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="import_date",
+     *         in="path",
+     *         description="Import date range (Y.m.d H:i:s-Y.m.d H:i:s)",
+     *         required=false,
+     *         example="2021.11.03 00:00:00-2021.12.03 00:00:00",
+     *         @OA\Schema(
+     *             type="string",
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="project_id",
+     *         in="path",
+     *         description="Project filter",
+     *         required=false,
+     *         example=1,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="import_id",
+     *         in="path",
+     *         description="Import_id filter",
+     *         required=false,
+     *         example=1,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     security={
+     *       {"bearerAuth": {}},
+     *     },
+     * )
+     *
+     * @param Request $request
+     * @return Response
+     */
+    public function csStrategy (Request $request): Response
+    {
+        $urls = URL::with('keywords');
+
+        if ($request->project_id && $request->project_id !== '{project_id}') {
+            $urls->where('project_id', (int) $request->project_id);
+        }
+
+        if ($request->import_id && $request->import_id !== '{import_id}') {
+            $urls->where('import_id', (int) $request->import_id);
+        }
+
+        if ($request->import_date) {
+            $dates = explode('-', $request->import_date);
+            if(count($dates) == 2) {
+                $from = DateTime::createFromFormat('Y.m.d H:i:s', $dates[0]);
+                $to = DateTime::createFromFormat('Y.m.d H:i:s', $dates[1]);
+                if($from && $to) {
+                        $from = date('Y-m-d H:i:s', strtotime('-1 day', strtotime($from->format('Y-m-d H:i:s'))));
+                        $from = DateTime::createFromFormat('Y-m-d H:i:s', $from);
+                        $urls->whereBetween('updated_at', [$from, $to]);
+
+                }
+            }
+        }
+
+        if($request->url && $request->url != '{url}') {
+            $urls->where('url', 'like', '%' . $request->url . '%');
+        }
+
+        $csData = [];
+        $i = 1;
+
+        foreach ($urls->get() as $url) {
+            /**
+             * @var URL $url
+             */
+            $item = [];
+            $item['url'] = $url->url;
+            $item['page_type'] = $url->page_type;
+            $item['main_category'] = $url->main_category;
+            $item['sub_category'] = $url->sub_category;
+            $item['sub_category2'] = $url->sub_category2;
+            $item['sub_category3'] = $url->sub_category3;
+            $item['sub_category4'] = $url->sub_category4;
+            $item['sub_category5'] = $url->sub_category5;
+            $item['status'] = $url->status;
+            $item['import_id'] = $url->import_id;
+
+            foreach ($url->keywords as $keyword) {
+                /**
+                 * @var Keyword $keyword
+                 */
+                $item['keyword'] = $keyword->keyword;
+                $item['current_ranking_position'] = $keyword->current_ranking_position;
+                $item['search_volume'] = $keyword->search_volume;
+                $item['search_volume_clustered'] = $keyword->search_volume_clustered;
+                $item['current_ranking_url'] = $keyword->current_ranking_url;
+                $item['featured_snippet_keyword'] = $keyword->featured_snippet_keyword;
+                $item['featured_snippet_owned'] = $keyword->featured_snippet_owned;
+                $item['search_intention'] = $keyword->search_intention;
+                $item['id'] = $i++;
+
+                $csData[] = $item;
+            }
+        }
+
+        if($request->keyword && $request->keyword != '{keyword}') {
+            foreach ($csData as $k => $item) {
+                if(strripos($item['keyword'], $request->keyword) === false) {
+                    unset($csData[$k]);
+                }
+            }
+        }
+
+        $count = $request->count == '{count}' ? 10 : $request->count;
+        $page = $request->page == '{page}' ? 1 : (int) $request->page;
+        $offset = ($page-1)*$count;
+
+        $data = array_slice($csData, $offset, $count);
+
+        return response([
+            'count' => count($csData),
+            'page' => $page,
+            'pages' => ceil(count($csData)/$count),
+            'perPage' => (int) $count,
+            'csData' => $data,
+        ], 200);
     }
 }
