@@ -15,7 +15,8 @@
 7. php artisan migrate
 8. php artisan db:seed --class=RoleSeeder
 9. php artisan db:seed --class=AdminSeeder
-10. php artisan serve (optional. You can instead configure the host for it )
+10. add cron job * * * * * cd /path-to-your-project && php artisan schedule:run >> /dev/null 2>&1 
+11. php artisan serve (optional. You can instead configure the host for it )
 
 ## Admin User
 To login firstly you should use email and password that you entered in .env as APP_ADMIN_EMAIL and APP_ADMIN_PASSWORD

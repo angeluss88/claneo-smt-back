@@ -2,12 +2,14 @@
 
 namespace App\Services;
 
+use App\Mail\SendPullDataErrorMail;
 use App\Models\Keyword;
 use App\Models\Project;
 use App\Models\URL;
 use App\Models\UrlData;
 use App\Models\UrlKeyword;
 use App\Models\UrlKeywordData;
+use App\Models\User;
 use Carbon\Carbon;
 use Google\Analytics\Data\V1beta\BetaAnalyticsDataClient;
 use Google\Analytics\Data\V1beta\DateRange;
@@ -405,9 +407,10 @@ class GoogleAnalyticsService
     /**
      * @param Project $project
      * @param array $urls
+     * @param mixed $date
      * @throws Exception
      */
-    public function expandGA(Project $project, array $urls)
+    public function expandGA(Project $project, array $urls, bool $date = null, $sendError = false)
     {
         $urls = array_unique($urls);
         try {
@@ -416,7 +419,9 @@ class GoogleAnalyticsService
                     $dimensions = ['pagePath', 'date'];
                     $metrics = ['totalRevenue', 'averagePurchaseRevenue', 'engagementRate', 'conversions', 'sessions'];
 
-                    $date = Carbon::now()->subMonth(16)->format('Y-m-d');
+                    if(!$date) {
+                        $date = Carbon::now()->subMonth(16)->format('Y-m-d');
+                    }
 
                     $response = $this->makeGAApiCall($project->ga_property_id, $dimensions, $metrics, $date);
                     $result = $this->formatGAResponse($response, $project->domain);
@@ -469,7 +474,21 @@ class GoogleAnalyticsService
                 }
             }
         } catch (Throwable $e) {
-            throw new Exception($e->getMessage());
+            if($sendError) {
+                foreach (User::all() as $user) {
+                    if($user->hasRole('admin')) {
+                        $details = [
+                            'project' => $project->domain,
+                            'date' => date('Y-m-d H:i:s'),
+                            'error' => $e->getMessage(),
+                            'type' => 'Google Analytics',
+                        ];
+                        \Mail::to($user['email'])->send(new SendPullDataErrorMail($details));
+                    }
+                }
+            } else {
+                throw new Exception($e->getMessage());
+            }
         }
     }
 
@@ -566,10 +585,11 @@ class GoogleAnalyticsService
      * @param array $urls
      * @param array $keywords
      * @param Project $project
+     * @param mixed $date
      * @return array
      * @throws Exception
      */
-    public function expandGSC(array $urls, array $keywords, Project $project): array
+    public function expandGSC(array $urls, array $keywords, Project $project, $date = null, $sendError = false): array
     {
         try {
             $result = [];
@@ -589,7 +609,7 @@ class GoogleAnalyticsService
                         || $site->getSiteUrl() == "https://" . $project->domain
                     ) {
                         $postBody = new Webmasters\SearchAnalyticsQueryRequest( [
-                            'startDate'  => Carbon::now()->subMonth(16)->format('Y-m-d'),
+                            'startDate'  => $date ? $date : Carbon::now()->subMonth(16)->format('Y-m-d'),
                             'endDate'    => Carbon::now()->format('Y-m-d'),
                             'dimensions' => [
                                 'page',   // $row->getKeys()[0]
@@ -614,7 +634,21 @@ class GoogleAnalyticsService
 
             $this->saveGSCResults($result);
         } catch(Throwable $e ) {
-            throw new Exception($e->getMessage());
+            if($sendError) {
+                foreach (User::all() as $user) {
+                    if($user->hasRole('admin')) {
+                        $details = [
+                            'project' => $project->domain,
+                            'date' => date('Y-m-d H:i:s'),
+                            'error' => $e->getMessage(),
+                            'type' => 'Google Analytics',
+                        ];
+                        \Mail::to($user['email'])->send(new SendPullDataErrorMail($details));
+                    }
+                }
+            } else {
+                throw new Exception($e->getMessage());
+            }
         }
 
         return $result;
