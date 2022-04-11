@@ -28,6 +28,8 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
+        $schedule->command('sanctum:prune-expired --hours=24')->daily();
+
         $schedule->call(function () {
             $ga = new GoogleAnalyticsService();
             $projects = Project::all();
