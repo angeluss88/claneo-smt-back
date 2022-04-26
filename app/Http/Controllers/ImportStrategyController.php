@@ -6,22 +6,19 @@ use App\Models\Import;
 use App\Models\Keyword;
 use App\Models\Project;
 use App\Models\URL;
+use App\Models\UrlData;
+use App\Models\UrlKeywordData;
 use App\Services\GoogleAnalyticsService;
 use Auth;
 use Exception;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Throwable;
 use Validator;
 use DateTime;
-use Illuminate\Pagination\Paginator;
-use Illuminate\Support\Collection;
-use Illuminate\Pagination\LengthAwarePaginator;
 
 class ImportStrategyController extends Controller
 {
@@ -841,6 +838,171 @@ class ImportStrategyController extends Controller
             'pages' => ceil(count($csData)/$count),
             'perPage' => (int) $count,
             'csData' => $data,
+        ], 200);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/timeline_data?import_date={import_date}&project_id={project_id}&metric={metric}",
+     *     operationId="api_timeline_data",
+     *     tags={"Content Strategy"},
+     *     summary="CS Timeline Data",
+     *     @OA\Response(
+     *         response="200",
+     *         description="Everything is fine",
+     *         @OA\JsonContent(
+     *             @OA\Property(
+     *                 property="timeLineData",
+     *                 type="array",
+     *                 collectionFormat="multi",
+     *                 @OA\Items(ref="#/components/schemas/TimelineData"),
+     *             ),
+     *         ),
+     *     ),
+     *     @OA\Response(
+     *         response="401",
+     *         description="Unauthenticated",
+     *     ),
+     *     @OA\Parameter(
+     *         name="import_date",
+     *         in="path",
+     *         description="Import date range (Y.m.d H:i:s-Y.m.d H:i:s)",
+     *         required=false,
+     *         example="2021.11.03 00:00:00-2021.12.03 00:00:00",
+     *         @OA\Schema(
+     *             type="string",
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="project_id",
+     *         in="path",
+     *         description="Project filter",
+     *         required=false,
+     *         example=1,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="metric",
+     *         in="path",
+     *         description="Keyword",
+     *         required=false,
+     *         example="clicks",
+     *         @OA\Schema(
+     *             type="string",
+     *         )
+     *     ),
+     *     security={
+     *       {"bearerAuth": {}},
+     *     },
+     * )
+     *
+     * @param Request $request
+     * @return Response
+     */
+    public function timelineData (Request $request): Response
+    {
+        $urls = URL::with('keywords');
+
+        if ($request->project_id && $request->project_id !== '{project_id}') {
+            $urls->where('project_id', (int) $request->project_id);
+        }
+        if ($request->import_date) {
+            $dates = explode('-', $request->import_date);
+            if(count($dates) == 2) {
+                $from = DateTime::createFromFormat('Y.m.d H:i:s', $dates[0]);
+                $to = DateTime::createFromFormat('Y.m.d H:i:s', $dates[1]);
+                if($from && $to) {
+                    $from = date('Y-m-d H:i:s', strtotime('-1 day', strtotime($from->format('Y-m-d H:i:s'))));
+                    $from = DateTime::createFromFormat('Y-m-d H:i:s', $from);
+                    $urls->whereBetween('updated_at', [$from, $to]);
+                }
+            }
+        }
+
+        $metrics = [
+            'ecom_conversion_rate',
+            'revenue',
+            'avg_order_value',
+            'bounce_rate',
+            'position',
+            'clicks',
+            'impressions',
+            'ctr',
+        ];
+        $dateData = [];
+
+        if($request->metric && $request->metric != "{metric}") {
+            if(!in_array($request->metric, $metrics)){
+                return response([
+                    'error' => "Metric should be in array ['ecom_conversion_rate', 'revenue', 'avg_order_value', 'bounce_rate', 'position', 'clicks', 'impressions', 'ctr']",
+                ], 500);
+            }
+
+                /**
+                 * @var URL $url
+                 */
+                $metric = $request->metric;
+
+                switch ($metric) {
+                    case 'ecom_conversion_rate':
+                    case 'revenue':
+                    case 'avg_order_value':
+                    case 'bounce_rate':
+                        $urls = $urls->get();
+                        foreach ($urls as $url) {
+                            foreach ($url->urlData as $urlData) {
+                                /**
+                                 * @var UrlData $urlData
+                                 */
+                                if(!isset($dateData[$urlData->date])) {
+                                    $dateData[$urlData->date] = $urlData->$metric;
+                                } else {
+                                    $dateData[$urlData->date] += $urlData->$metric;
+                                }
+                            }
+                        }
+                        if(in_array($metric, ['ecom_conversion_rate', 'avg_order_value', 'bounce_rate']) && count($urls) !== 0) {
+                            foreach ($dateData as $k => $v) {
+                                $dateData[$k] /= count($urls);
+                            }
+                        }
+                        break;
+                    case 'position':
+                    case 'clicks':
+                    case 'impressions':
+                    case 'ctr':
+                        $urls = $urls->get();
+                        foreach ($urls as $url) {
+                            foreach ($url->urlKeywordData as $urlData) {
+                                /**
+                                 * @var UrlKeywordData urlKeywordData
+                                 */
+                                if(!isset($dateData[$urlData->date])) {
+                                    $dateData[$urlData->date] = [$urlData->$metric, 1];
+                                } else {
+                                    $dateData[$urlData->date] = [
+                                        $dateData[$urlData->date][0] + $urlData->$metric,
+                                        ++$dateData[$urlData->date][1],
+                                    ];
+                                }
+                            }
+                        }
+                        foreach ($dateData as $k => $v) {
+                            $dateData[$k] = in_array($metric, ['position', 'ctr']) ? $v[0]/$v[1] : (float) $v[0];
+                        }
+
+                        break;
+                }
+        } else {
+            return response([
+                'error' => "Param metric is required",
+            ], 500);
+        }
+
+        return response([
+            'timeLineData' => $dateData,
         ], 200);
     }
 }
