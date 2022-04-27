@@ -886,7 +886,7 @@ class ImportStrategyController extends Controller
      *     @OA\Parameter(
      *         name="metric",
      *         in="path",
-     *         description="Keyword",
+     *         description="Metric ['ecom_conversion_rate', 'revenue', 'avg_order_value', 'bounce_rate', 'position', 'clicks', 'impressions', 'ctr']",
      *         required=false,
      *         example="clicks",
      *         @OA\Schema(
@@ -999,6 +999,10 @@ class ImportStrategyController extends Controller
             return response([
                 'error' => "Param metric is required",
             ], 500);
+        }
+
+        foreach ($dateData as $k => $v) {
+            $dateData[$k] = (float) $v;
         }
 
         return response([
