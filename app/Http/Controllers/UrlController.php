@@ -7,6 +7,7 @@ use App\Models\URL;
 use App\Models\UrlData;
 use App\Models\UrlKeywordData;
 use Auth;
+use Carbon\Carbon;
 use DateTime;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
@@ -482,11 +483,12 @@ class UrlController extends Controller
         }
 
         $data = [];
-        $avgConvRate = 0;
-        $avgRevenue = 0;
-        $avgOrderValue = 0;
-        $avgBounceRate = 0;
+        $aggrConvRate = 0;
+        $aggrRevenue = 0;
+        $aggrOrderValue = 0;
+        $aggrBounceRate = 0;
 
+        $totalUrlKeywordDataCount = 0;
         $aggrPosition = 0;
         $aggrClicks = 0;
         $aggrImpressions = 0;
@@ -499,68 +501,62 @@ class UrlController extends Controller
              * @var URL $item
              */
             foreach ($item->urlData as $urlData) {
-                $avgConvRate += $urlData->ecom_conversion_rate;
-                $avgRevenue += $urlData->revenue;
-                $avgOrderValue += $urlData->avg_order_value;
-                $avgBounceRate += $urlData->bounce_rate;
+                $aggrConvRate += $urlData->ecom_conversion_rate;
+                $aggrRevenue += $urlData->revenue;
+                $aggrOrderValue += $urlData->avg_order_value;
+                $aggrBounceRate += $urlData->bounce_rate;
             }
 
             $urlKeywordDataCount = 0;
-            $avgPosition = 0;
-            $avgClicks = 0;
-            $avgImpressions = 0;
-            $avgCtr = 0;
-            $avgSearchVolume = 0;
+            $position = 0;
+            $clicks = 0;
+            $impressions = 0;
+            $ctr = 0;
+            $searchVolume = 0;
 
             /**
              * @var UrlKeywordData $urlKeywordData
              */
             foreach ($item->urlKeywordData as $urlKeywordData) {
-                $avgPosition += $urlKeywordData->position;
-                $avgClicks += $urlKeywordData->clicks;
-                $avgImpressions += $urlKeywordData->impressions;
-                $avgCtr += $urlKeywordData->ctr;
-
+                $position += $urlKeywordData->position;
+                $clicks += $urlKeywordData->clicks;
+                $impressions += $urlKeywordData->impressions;
+                $ctr += $urlKeywordData->ctr;
                 $urlKeywordDataCount++;
             }
 
-            if($urlKeywordDataCount !== 0) {
-                $avgPosition /= $urlKeywordDataCount;
-                $avgCtr /= $urlKeywordDataCount;
-            }
-
             foreach ($item->keywords as $keyword) {
-                $avgSearchVolume += $keyword->search_volume;
+                $searchVolume += $keyword->search_volume;
             }
 
-            $aggrPosition =  $avgPosition;
-            $aggrClicks +=  $avgClicks;
-            $aggrImpressions =  $avgImpressions;
-            $aggrCtr =  $avgCtr;
-            $aggrSearchVolume +=  $avgSearchVolume;
+            $aggrPosition +=  $position;
+            $aggrClicks +=  $clicks;
+            $aggrImpressions += $impressions;
+            $aggrCtr +=  $ctr;
+            $aggrSearchVolume +=  $searchVolume;
+            $totalUrlKeywordDataCount += $urlKeywordDataCount;
         }
 
         if($url->count() !== 0) {
-            $avgConvRate /= $url->count();
-            $avgOrderValue /= $url->count();
-            $avgBounceRate /= $url->count();
+            $aggrConvRate /= $url->count();
+            $aggrOrderValue /= $url->count();
+            $aggrBounceRate /= $url->count();
         }
 
-        $data['avgConvRate'] =  $avgConvRate;
-        $data['avgRevenue'] =  $avgRevenue;
-        $data['avgOrderValue'] =  $avgOrderValue;
-        $data['avgBounceRate'] =  $avgBounceRate;
-
-        if($url->count() !== 0) {
-            $aggrClicks /= $url->count();
-            $aggrCtr /= $url->count();
+        if($totalUrlKeywordDataCount > 0) {
+            $aggrPosition /= $totalUrlKeywordDataCount;
+            $aggrCtr /= $totalUrlKeywordDataCount;
         }
 
+        $data['avgConvRate'] =  $aggrConvRate;
+        $data['avgRevenue'] =  $aggrRevenue;
+        $data['avgOrderValue'] =  $aggrOrderValue;
+        $data['avgBounceRate'] =  $aggrBounceRate;
         $data['aggrPosition'] =  $aggrPosition;
         $data['aggrClicks'] =  $aggrClicks;
         $data['aggrImpressions'] =  $aggrImpressions;
         $data['aggrCtr'] =  $aggrCtr;
-        $data['aggrSearchVolume'] =  $aggrCtr;
+        $data['aggrSearchVolume'] =  $aggrSearchVolume;
 
         return response([
             'data' => $data,
@@ -569,42 +565,30 @@ class UrlController extends Controller
 
     /**
      * @param $date_range
-     * @param Builder $url
+     * @param Builder $urls
      * @return Builder
      */
-    protected function filterUrlsByDate($date_range, Builder $url): Builder
+    protected function filterUrlsByDate($date_range, Builder $urls): Builder
     {
         $dates = explode('-', $date_range);
         if(count($dates) == 2) {
-            $from = DateTime::createFromFormat('Y.m.d', $dates[0]);
-            $to = DateTime::createFromFormat('Y.m.d', $dates[1]);
+            $from = Carbon::createFromFormat('Y.m.d', $dates[0])->subDay();
+            $to = Carbon::createFromFormat('Y.m.d', $dates[1]);
             if($from && $to) {
-                $url->with([
+                $urls->with([
                     'urlData' => function (HasMany $query) use ($from, $to) {
-                        if ($from->format('Y-m-d') == $to->format('Y-m-d')) {
-                            $query->where('date', "=", $from->format('Y-m-d'));
-                        } else {
-                            $from = date('Y-m-d', strtotime('-1 day', strtotime($from->format('Y-m-d'))));
-                            $from = DateTime::createFromFormat('Y-m-d', $from);
-                            $query->whereBetween('date', [$from, $to]);
-                        }
+                        $query->whereBetween('date', [$from, $to]);
                     }
                 ]);
-                $url->with([
+                $urls->with([
                     'urlKeywordData' => function (HasManyThrough $query) use ($from, $to) {
-                        if ($from->format('Y-m-d') == $to->format('Y-m-d')) {
-                            $query->where('date', "=", $from->format('Y-m-d'));
-                        } else {
-                            $from = date('Y-m-d', strtotime('-1 day', strtotime($from->format('Y-m-d'))));
-                            $from = DateTime::createFromFormat('Y-m-d', $from);
-                            $query->whereBetween('date', [$from, $to]);
-                        }
+                        $query->whereBetween('date', [$from, $to]);
                     }
                 ]);
             }
         }
 
-        return $url;
+        return $urls;
     }
 
     /**
