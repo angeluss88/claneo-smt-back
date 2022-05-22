@@ -6,8 +6,6 @@ use App\Models\Import;
 use App\Models\Keyword;
 use App\Models\Project;
 use App\Models\URL;
-use App\Models\UrlData;
-use App\Models\UrlKeywordData;
 use App\Services\GoogleAnalyticsService;
 use Auth;
 use Carbon\Carbon;
@@ -17,7 +15,6 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Throwable;
 use Validator;
@@ -343,8 +340,7 @@ class ImportStrategyController extends Controller
             // empty keys mean that we don't have any of field name: field_de, field_en or *field_en
             if (empty($keys)) {
                 return response()->json([
-                    'attribute' => 'URL',
-                    'error_message' => 'this field is required',
+                    'message' => 'URL: this field is required',
                 ], 422);
             }
 
@@ -353,8 +349,7 @@ class ImportStrategyController extends Controller
             foreach ($required_fields as $required_field) {
                 if (!isset($headers[$keys[$required_field]])) {
                     return response()->json([
-                        'attribute' => $keys[$required_field],
-                        'error_message' => 'this column is required',
+                        'message' => $keys[$required_field] . ': this column is required',
                     ], 422);
                 }
             }
@@ -368,8 +363,7 @@ class ImportStrategyController extends Controller
                 $current_ranking_position_key = 'current_ranking_position3';
             } else {
                 return response()->json([
-                    'attribute' => $keys['current_ranking_position'],
-                    'error_message' => 'this column is required',
+                    'message' => $keys['current_ranking_position'] . ': this column is required',
                 ], 422);
             }
 
@@ -390,7 +384,7 @@ class ImportStrategyController extends Controller
                         $failed_rows[] = [
                             'row' => $row_number,
                             'attribute' => $keys[$required_field],
-                            'error_message' => 'this field is required',
+                            'message' => $keys[$required_field] . ': this field is required in row #' . $row_number,
                         ];
                         continue 2;
                     }
@@ -401,7 +395,7 @@ class ImportStrategyController extends Controller
                     $failed_rows[] = [
                         'row' => $row_number,
                         'attribute' => $keys['current_ranking_position'],
-                        'error_message' => 'this field is required',
+                        'message' => $keys['current_ranking_position'] . ': this field is required in row #' . $row_number,
                     ];
                     continue;
                 }

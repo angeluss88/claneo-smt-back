@@ -283,11 +283,37 @@ class GoogleAnalyticsService
             // Refresh the token if possible, else fetch a new one.
             if ($refreshToken = $this->getRefreshToken()) {
                 $accessToken = $this->getAccessTokenWithRefreshToken($refreshToken, $client);
-            } else {
-                if($authCode = $this->getAuthCode()) {
+                $accessTokenArray = json_decode($accessToken);
+
+                if(!isset($accessTokenArray->access_token)) {
+                    if(is_file(self::getRefreshTokenPath())) {
+                        unlink(self::getRefreshTokenPath());
+                    }
+                    if(is_file(self::getAccessTokenPath())) {
+                        unlink(self::getAccessTokenPath());
+                    }
+                    $refreshToken = $this->getRefreshToken();
+                }
+            }
+
+            if(!$refreshToken) {
+                if ($authCode = $this->getAuthCode()) {
                     $accessToken = $this->fetchAccessTokenWithAuthCode($authCode, $client);
+                    $accessTokenArray = json_decode($accessToken);
+
+                    if(!isset($accessTokenArray->access_token)) {
+                        if(is_file(self::getRefreshTokenPath())) {
+                            unlink(self::getRefreshTokenPath());
+                        }
+                        if(is_file(self::getAccessTokenPath())) {
+                            unlink(self::getAccessTokenPath());
+                        }
+
+                        throw new Exception("Can't retrieve Access token");
+                    }
+
                     if ($res = json_decode($accessToken, true)) {
-                        if(isset($res['refresh_token'])) {
+                        if (isset($res['refresh_token'])) {
                             $refreshTokenPath = self::getRefreshTokenPath();
                             if (!file_exists(dirname($refreshTokenPath))) {
                                 mkdir(dirname($refreshTokenPath), 0700, true);
@@ -299,6 +325,7 @@ class GoogleAnalyticsService
                     throw new Exception("Can't retrieve Auth code");
                 }
             }
+
 
             $client->setAccessToken($accessToken);
             $accessToken = $client->getAccessToken();
@@ -586,6 +613,7 @@ class GoogleAnalyticsService
      * @param array $keywords
      * @param Project $project
      * @param mixed $date
+     * @param bool $sendError
      * @return array
      * @throws Exception
      */
