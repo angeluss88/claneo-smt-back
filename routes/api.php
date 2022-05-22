@@ -50,6 +50,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/imports/{import}', [ImportStrategyController::class, 'show'])->middleware('role:admin,SEO');
     Route::get('/expandGA/{import}', [ImportStrategyController::class, 'expandGA'])->middleware('role:admin,SEO');
     Route::get('/expandGSC/{import}', [ImportStrategyController::class, 'expandGSC'])->middleware('role:admin,SEO');
+    Route::get('/getGscAuthLink', [ImportStrategyController::class, 'getGscAuthLink'])->middleware('role:admin,SEO');
     Route::get('/import_example', [ImportStrategyController::class, 'example']);
     Route::get('/events', [EventController::class, 'index'])->middleware('role:admin');
 });

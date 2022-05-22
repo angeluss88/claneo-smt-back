@@ -1105,4 +1105,32 @@ class ImportStrategyController extends Controller
 
         return response([], 204);
     }
+
+    /**
+     * @OA\Get(
+     *     path="/getGscAuthLink",
+     *     operationId="getGscAuthLink",
+     *     tags={"Content Strategy"},
+     *     summary="Get GSC Auth Link",
+     *     @OA\Response(
+     *         response="200",
+     *         description="Link",
+     *     ),
+     *     @OA\Response(
+     *         response="401",
+     *         description="Unauthenticated",
+     *     ),
+     *     security={
+     *       {"bearerAuth": {}},
+     *     },
+     * )
+     *
+     * @throws \Google\Exception
+     */
+    public function getGscAuthLink()
+    {
+        return response([
+            'link' => $this->ga->getGSCAuthorizedClient()->createAuthUrl(),
+        ], 200);
+    }
 }
