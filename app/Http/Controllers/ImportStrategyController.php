@@ -190,7 +190,7 @@ class ImportStrategyController extends Controller
     {
         $count = $request->count == '{count}' ? 10 : $request->count;
         return response([
-            'imports' => Import::with(['user', 'project'])->paginate($count),
+            'imports' => Import::with(['user', 'project'])->orderBy('id', 'desc')->paginate($count),
         ], 200);
     }
 
@@ -492,14 +492,6 @@ class ImportStrategyController extends Controller
             // set import status to complete
             $import->status = Import::STATUS_COMPLETE;
             $import->save();
-
-            if($project->strategy !== Project::NO_EXPAND_STRATEGY) {
-                $this->ga->expandGA($project, $urlsToExpand);
-            }
-
-            if($project->expand_gsc) {
-                $this->ga->expandGSC($urlsToExpand, $keywordsToExpand, $project);
-            }
 
         } catch (Throwable $e) {
             throw new Exception($e->getMessage());
@@ -999,5 +991,118 @@ class ImportStrategyController extends Controller
         return response([
             'timeLineData' => $dateData,
         ], 200);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/expandGA/{import}",
+     *     operationId="imports_expandGA",
+     *     tags={"Content Strategy"},
+     *     summary="Expand GA data for import",
+     *     @OA\Response(
+     *         response="204",
+     *         description="Everything is fine",
+     *     ),
+     *     @OA\Response(
+     *         response="401",
+     *         description="Unauthenticated",
+     *     ),
+     *     @OA\Response(
+     *         response="404",
+     *         description="Error: Not Found",
+     *     ),
+     *     @OA\Parameter(
+     *         name="import",
+     *         in="path",
+     *         description="The import id",
+     *         required=true,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     security={
+     *       {"bearerAuth": {}},
+     *     },
+     * )
+     *
+     * @param Import $import
+     * @return Response
+     * @throws \Google\Exception
+     */
+    public function expandGA(Import $import): Response
+    {
+        $import = Import::find($import->id);
+
+        if($import->project && $import->urls) {
+            if ($import->project->strategy !== Project::NO_EXPAND_STRATEGY) {
+                $urls = [];
+                foreach ($import->urls as $url) {
+                    $urls[] = $url->url;
+                }
+
+                $this->ga->expandGA($import->project, $urls);
+            }
+        }
+
+        return response([], 204);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/expandGSC/{import}",
+     *     operationId="imports_expandGSC",
+     *     tags={"Content Strategy"},
+     *     summary="Expand GSC data for import",
+     *     @OA\Response(
+     *         response="204",
+     *         description="Everything is fine",
+     *     ),
+     *     @OA\Response(
+     *         response="401",
+     *         description="Unauthenticated",
+     *     ),
+     *     @OA\Response(
+     *         response="404",
+     *         description="Error: Not Found",
+     *     ),
+     *     @OA\Parameter(
+     *         name="import",
+     *         in="path",
+     *         description="The import id",
+     *         required=true,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     security={
+     *       {"bearerAuth": {}},
+     *     },
+     * )
+     *
+     * @param Import $import
+     * @return Response
+     * @throws \Google\Exception
+     */
+    public function expandGSC(Import $import): Response
+    {
+        $import = Import::find($import->id);
+
+        if($import->project) {
+            if ($import->project->expand_gsc) {
+                $urls = [];
+                foreach ($import->urls as $url) {
+                    $urls[] = $url->url;
+                }
+
+                $keywords = [];
+                foreach ($import->keywords as $keyword) {
+                    $keywords[] = $keyword->keyword;
+                }
+
+                $this->ga->expandGSC($urls, $keywords, $import->project);
+            }
+        }
+
+        return response([], 204);
     }
 }

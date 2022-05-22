@@ -4,9 +4,11 @@ namespace App\Models;
 
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -27,9 +29,11 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Import whereUserId($value)
  * @mixin Eloquent
  * @property string $status
- * @property-read \App\Models\Project $project
- * @property-read \App\Models\User $user
+ * @property-read Project $project
+ * @property-read User $user
  * @method static Builder|Import whereStatus($value)
+ * @property-read Collection|URL[] $urls
+ * @property-read Collection|URL[] $keywords
  */
 class Import extends Model
 {
@@ -63,6 +67,22 @@ class Import extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    /**
+     * @return HasMany
+     */
+    public function urls(): HasMany
+    {
+        return $this->hasMany(URL::class);
+    }
+
+    /**
+     * @return HasMany
+     */
+    public function keywords(): HasMany
+    {
+        return $this->hasMany(Keyword::class);
     }
 
 }
