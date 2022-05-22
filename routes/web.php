@@ -14,9 +14,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
-
+Route::get('/', [StartPageController::class, 'welcome']);
+Route::post('/', [StartPageController::class, 'handleWelcome']);
 Route::get('/start_page', [StartPageController::class, 'index']);
 Route::post('/start_page', [StartPageController::class, 'handle']);

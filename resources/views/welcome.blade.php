@@ -18,11 +18,52 @@
             body {
                 font-family: 'Nunito', sans-serif;
             }
+            .green_colored {
+                color: green;
+            }
+            .gsc_code_section {
+                margin-left: 65px;
+            }
+            #gsc_code_field {
+                border: 1px solid;
+                color: black;
+                padding: 5px;
+                width: 100%;
+            }
+            #gsc_form {
+                width: 600px;
+            }
+            .gsc_save_button {
+                padding: 10px;
+                border-radius: 8px;
+                background-color: azure;
+                border: 1px solid black;
+                cursor: pointer;
+            }
         </style>
     </head>
     <body class="antialiased">
+    @if ($message = Session::get('success'))
+        <div class="alert alert-success alert-block green_colored">
+            <strong>{{ $message }}</strong>
+        </div>
+    @endif
     <p style="text-align: center; margin-top: 300px">
         <img width="1280" src="/Claneo_logo.png" alt />
     </p>
+    @if (isset($code))
+        <div class="gsc_code_section">
+            <form name="startAppData" method="POST" id="gsc_form">
+                @csrf
+                <p>
+                    <label for="gsc_code_field">Your Google Search Console Auth code:</label>
+                    <input type="text" name="code" id="gsc_code_field" value="{{ $code }}"/>
+                </p>
+                <p>
+                    <button class="gsc_save_button">Save</button>
+                </p>
+            </form>
+        </div>
+    @endif
     </body>
 </html>

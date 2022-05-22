@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\GoogleAnalyticsService;
+use Google\Exception;
 use Google\Service\Webmasters;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -11,6 +12,9 @@ use Illuminate\Http\UploadedFile;
 
 class StartPageController extends Controller
 {
+    /**
+     * @throws Exception
+     */
     public function index()
     {
         $data = [];
@@ -32,6 +36,46 @@ class StartPageController extends Controller
         $data['gsc_access_token_exists'] = file_exists(GoogleAnalyticsService::getAccessTokenPath());
 
         return view('startPage', $data);
+    }
+
+    public function welcome(Request $request)
+    {
+        $request->validate([
+            'code' => 'string|nullable',
+        ]);
+        $data = [];
+        if(isset($request->code)) {
+//            $authCodePath = GoogleAnalyticsService::getAuthCodePath();
+//            if (!file_exists(dirname($authCodePath))) {
+//                mkdir(dirname($authCodePath), 0700, true);
+//            }
+//            file_put_contents($authCodePath, $request->code);
+            $data['code'] = $request->code;
+        }
+
+        return view('welcome', $data);
+    }
+
+    public function handleWelcome (Request $request): RedirectResponse
+    {
+        $request->validate([
+            'code' => 'string|nullable',
+        ]);
+
+        if(isset($request->code)) {
+            $authCodePath = GoogleAnalyticsService::getAuthCodePath();
+            if (!file_exists(dirname($authCodePath))) {
+                mkdir(dirname($authCodePath), 0700, true);
+            }
+            file_put_contents($authCodePath, $request->code);
+            if(is_file(GoogleAnalyticsService::getRefreshTokenPath())) {
+                unlink(GoogleAnalyticsService::getRefreshTokenPath());
+            }
+            if(is_file(GoogleAnalyticsService::getAccessTokenPath())) {
+                unlink(GoogleAnalyticsService::getAccessTokenPath());
+            }
+        }
+        return redirect('/')->with(['success' => 'Operation Successfully. Now You can close this window and try Expand GSC Data']);
     }
 
     public function handle(Request $request): RedirectResponse

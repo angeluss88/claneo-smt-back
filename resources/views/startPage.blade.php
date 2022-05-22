@@ -84,7 +84,7 @@
         <div class="credentials_block">
             <p class="creds_block_label">
                 <label for="authCode">
-                    Put Your Google Search Console Authorization Code here (
+                    Refresh the page to put Your Google Search Console Authorization Code or do it directly here (
                     <span class="{{ $gsc_auth_code_exists ? 'green_colored' : 'red_colored' }}">
                         {{ $gsc_auth_code_exists ? 'Exists' : 'Does not exists' }}
                     </span>
