@@ -54,6 +54,9 @@ use Illuminate\Support\Carbon;
  * @method static Builder|URL whereSubCategory5($value)
  * @method static Builder|URL whereUpdatedAt($value)
  * @method static Builder|URL whereUrl($value)
+ * @property-read Collection|URL[] $urls
+ * @property-read Collection|UrlData[] $urlData
+ * @property-read Collection|UrlKeywordData[] $urlKeywordData
  */
 class URL extends Model
 {

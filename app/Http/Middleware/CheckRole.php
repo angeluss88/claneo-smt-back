@@ -12,6 +12,7 @@ class CheckRole
      *
      * @param Request $request
      * @param Closure $next
+     * @param $role
      * @return mixed
      */
     public function handle(Request $request, Closure $next, $role)

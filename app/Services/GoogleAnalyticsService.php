@@ -28,6 +28,7 @@ use Google_Service_AnalyticsReporting_DateRange;
 use Google_Service_AnalyticsReporting_GetReportsRequest;
 use Google_Service_AnalyticsReporting_Metric;
 use Google_Service_AnalyticsReporting_ReportRequest;
+use Mail;
 use Throwable;
 use Google_Service_Webmasters;
 
@@ -40,7 +41,6 @@ class GoogleAnalyticsService
     public $scopes = ['https://www.googleapis.com/auth/analytics.readonly'];
     public $appName = "Hello Analytics Reporting";
     public $accountId = '109167922';
-    const SERVICE_ACCOUNT = 'starting-account-bfkqmhlvx8j0';
     const PAGE_DIMENSION = 'ga:pagePath';
     const DATE_DIMENSION = 'ga:date';
     const GOOGLE_OAUTH_TOKEN_URL = 'https://accounts.google.com/o/oauth2/token';
@@ -435,9 +435,10 @@ class GoogleAnalyticsService
      * @param Project $project
      * @param array $urls
      * @param mixed $date
+     * @param bool $sendError
      * @throws Exception
      */
-    public function expandGA(Project $project, array $urls, bool $date = null, $sendError = false)
+    public function expandGA(Project $project, array $urls, bool $date = null, bool $sendError = true)
     {
         $urls = array_unique($urls);
         try {
@@ -510,7 +511,7 @@ class GoogleAnalyticsService
                             'error' => $e->getMessage(),
                             'type' => 'Google Analytics',
                         ];
-                        \Mail::to($user['email'])->send(new SendPullDataErrorMail($details));
+                        Mail::to($user['email'])->send(new SendPullDataErrorMail($details));
                     }
                 }
             } else {
@@ -617,7 +618,7 @@ class GoogleAnalyticsService
      * @return array
      * @throws Exception
      */
-    public function expandGSC(array $urls, array $keywords, Project $project, $date = null, $sendError = false): array
+    public function expandGSC(array $urls, array $keywords, Project $project, $date = null, bool $sendError = true): array
     {
         try {
             $result = [];
@@ -637,7 +638,7 @@ class GoogleAnalyticsService
                         || $site->getSiteUrl() == "https://" . $project->domain
                     ) {
                         $postBody = new Webmasters\SearchAnalyticsQueryRequest( [
-                            'startDate'  => $date ? $date : Carbon::now()->subMonth(16)->format('Y-m-d'),
+                            'startDate'  => $date ?: Carbon::now()->subMonth(16)->format('Y-m-d'),
                             'endDate'    => Carbon::now()->format('Y-m-d'),
                             'dimensions' => [
                                 'page',   // $row->getKeys()[0]
@@ -671,7 +672,7 @@ class GoogleAnalyticsService
                             'error' => $e->getMessage(),
                             'type' => 'Google Analytics',
                         ];
-                        \Mail::to($user['email'])->send(new SendPullDataErrorMail($details));
+                        Mail::to($user['email'])->send(new SendPullDataErrorMail($details));
                     }
                 }
             } else {

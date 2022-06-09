@@ -317,9 +317,6 @@ class ImportStrategyController extends Controller
             'project_id' => 'required|integer|exists:projects,id',
         ]);
 
-        $urlsToExpand = [];
-        $keywordsToExpand = [];
-
         if ($validator->fails()) {
             return response()->json($validator->errors(), 400);
         }
@@ -432,7 +429,6 @@ class ImportStrategyController extends Controller
 
                 // add keyword item to keywords array by keyword key (the same keywords will be the same item)
                 $keywords[$row[$headers[$keys['keyword']]]] = $keyword;
-                $keywordsToExpand[] = $keyword['keyword'];
 
                 // create URL item from row
                 $url['url'] = $row[$headers[$keys['url']]];
@@ -446,8 +442,6 @@ class ImportStrategyController extends Controller
                 $url['sub_category3'] = isset($headers[$keys['sub_category_3']]) ? $row[$headers[$keys['sub_category_3']]] : null;
                 $url['sub_category4'] = isset($headers[$keys['sub_category_4']]) ? $row[$headers[$keys['sub_category_4']]] : null;
                 $url['sub_category5'] = isset($headers[$keys['sub_category_5']]) ? $row[$headers[$keys['sub_category_5']]] : null;
-
-                $urlsToExpand[] = $url['url'];
 
                 // add url item to $urls by url key (the same urls will be the same item)
                 $urls[$row[$headers[$keys['url']]]] = $url;
@@ -1101,6 +1095,112 @@ class ImportStrategyController extends Controller
 
                 $this->ga->expandGSC($urls, $keywords, $import->project);
             }
+        }
+
+        return response([], 204);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/expandGAForProject/{project}",
+     *     operationId="imports_expandGAForProject",
+     *     tags={"Content Strategy"},
+     *     summary="Expand GA data for project",
+     *     @OA\Response(
+     *         response="204",
+     *         description="Everything is fine",
+     *     ),
+     *     @OA\Response(
+     *         response="401",
+     *         description="Unauthenticated",
+     *     ),
+     *     @OA\Response(
+     *         response="404",
+     *         description="Error: Not Found",
+     *     ),
+     *     @OA\Parameter(
+     *         name="project",
+     *         in="path",
+     *         description="The project id",
+     *         required=true,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     security={
+     *       {"bearerAuth": {}},
+     *     },
+     * )
+     *
+     * @param Project $project
+     * @return Response
+     * @throws \Google\Exception
+     */
+    public function expandGAForProject(Project $project): Response
+    {
+        if($project->urls) {
+            if ($project->strategy !== Project::NO_EXPAND_STRATEGY) {
+                $urls = [];
+                foreach ($project->urls as $url) {
+                    $urls[] = $url->url;
+                }
+
+                $this->ga->expandGA($project, $urls);
+            }
+        }
+
+        return response([], 204);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/expandGSCForProject/{project}",
+     *     operationId="imports_expandGSCForProject",
+     *     tags={"Content Strategy"},
+     *     summary="Expand GSC data for project",
+     *     @OA\Response(
+     *         response="204",
+     *         description="Everything is fine",
+     *     ),
+     *     @OA\Response(
+     *         response="401",
+     *         description="Unauthenticated",
+     *     ),
+     *     @OA\Response(
+     *         response="404",
+     *         description="Error: Not Found",
+     *     ),
+     *     @OA\Parameter(
+     *         name="project",
+     *         in="path",
+     *         description="The project id",
+     *         required=true,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     security={
+     *       {"bearerAuth": {}},
+     *     },
+     * )
+     *
+     * @param Project $project
+     * @return Response
+     * @throws \Google\Exception
+     */
+    public function expandGSCForProject(Project $project): Response
+    {
+        if($project->urls && $project->expand_gsc) {
+                $urls = [];
+                $keywords = [];
+                foreach ($project->urls as $url) {
+                    $urls[] = $url->url;
+                    foreach ($url->keywords as $keyword) {
+                        $keywords[] = $keyword->keyword;
+                    }
+                }
+
+                $this->ga->expandGSC($urls, array_unique($keywords), $project);
         }
 
         return response([], 204);
