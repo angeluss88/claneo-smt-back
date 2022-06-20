@@ -7,6 +7,8 @@
     "require": {
         "php": "^7.3|^8.0",
         "ext-bcmath": "*",
+        "ext-curl": "*",
+        "ext-json": "*",
         "darkaonline/l5-swagger": "8.1.0",
         "doctrine/dbal": "^3.1",
         "fruitcake/laravel-cors": "^2.0",
@@ -19,8 +21,8 @@
         "laravel/sanctum": "^2.11",
         "laravel/tinker": "^2.5",
         "phpseclib/bcmath_compat": "^2.0",
-        "ext-json": "*",
-        "ext-curl": "*"
+        "symfony/http-client": "^5.4",
+        "symfony/postmark-mailer": "^5.4"
     },
     "require-dev": {
         "barryvdh/laravel-ide-helper": "^2.10",
