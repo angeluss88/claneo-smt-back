@@ -50,7 +50,7 @@ class Kernel extends ConsoleKernel
                 }
             }
 
-        })->weekly();
+        })->daily();
     }
 
     /**
