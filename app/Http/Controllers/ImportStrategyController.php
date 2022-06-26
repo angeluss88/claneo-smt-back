@@ -31,7 +31,7 @@ class ImportStrategyController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/imports?page={page}&count={count}",
+     *     path="/imports?page={page}&count={count}&import_date={import_date}&project_id={project_id}",
      *     operationId="imports_index",
      *     tags={"Content Strategy"},
      *     summary="List of imports",
@@ -178,6 +178,26 @@ class ImportStrategyController extends Controller
      *             type="integer",
      *         )
      *     ),
+     *     @OA\Parameter(
+     *         name="import_date",
+     *         in="path",
+     *         description="Import date range (Y.m.d H:i:s-Y.m.d H:i:s)",
+     *         required=false,
+     *         example="2021.11.03 00:00:00-2021.12.03 00:00:00",
+     *         @OA\Schema(
+     *             type="string",
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="project_id",
+     *         in="path",
+     *         description="Project filter",
+     *         required=false,
+     *         example=1,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
      *     security={
      *       {"bearerAuth": {}},
      *     },
@@ -188,9 +208,28 @@ class ImportStrategyController extends Controller
      */
     public function index(Request $request): Response
     {
+        $imports = Import::with(['user', 'project']);
+
         $count = $request->count == '{count}' ? 10 : $request->count;
+
+        if ($request->project_id && $request->project_id !== '{project_id}') {
+            $imports->where('project_id', (int) $request->project_id);
+        }
+
+        if ($request->import_date && $request->import_date !== '{import_date}') {
+            $dates = explode('-', $request->import_date);
+            if(count($dates) == 2) {
+                $from = Carbon::createFromFormat('Y.m.d H:i:s', $dates[0]);
+                $to = Carbon::createFromFormat('Y.m.d H:i:s', $dates[1]);
+
+                if($from && $to) {
+                    $imports->whereBetween('updated_at', [$from, $to]);
+                }
+            }
+        }
+
         return response([
-            'imports' => Import::with(['user', 'project'])->orderBy('id', 'desc')->paginate($count),
+            'imports' => $imports->orderBy('id', 'desc')->paginate($count),
         ], 200);
     }
 
