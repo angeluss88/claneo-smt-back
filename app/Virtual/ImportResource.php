@@ -79,6 +79,28 @@ class ImportResource
 
     /**
      * @OA\Property(
+     *     title="lastGAExpandDate",
+     *     description="Date of last GA expand",
+     *     example="2022-05-19T20:04:24.000000Z",
+     * )
+     *
+     * @var string
+     */
+    public $lastGAExpandDate;
+
+    /**
+     * @OA\Property(
+     *     title="lastGSCExpandData",
+     *     description="Date of last GSC expand",
+     *     example="2022-05-19T20:04:24.000000Z",
+     * )
+     *
+     * @var string
+     */
+    public $lastGSCExpandData;
+
+    /**
+     * @OA\Property(
      *     title="user",
      *     type="object",
      *     @OA\Schema (ref="#/components/schemas/UserResource")
