@@ -85,4 +85,41 @@ class Import extends Model
         return $this->hasMany(Keyword::class);
     }
 
+    public function setLastGAExpandDate()
+    {
+        $lastGAExpandData = null;
+        foreach ($this->urls as $url) {
+            $date = $url->urlData()->orderBy('date', 'desc')->limit(1)->first();
+
+            if($date) {
+                $date = Carbon::createFromFormat('Y-m-d', $date->date);
+                if (is_null($lastGAExpandData)) {
+                    $lastGAExpandData = $date;
+                } elseif ($lastGAExpandData->lt($date)) {
+                    $lastGAExpandData = $date;
+                }
+            }
+        }
+        $this->lastGAExpandDate = $lastGAExpandData;
+    }
+
+    public function setLastGSCExpandDate()
+    {
+        $lastGSCExpandData = null;
+        foreach ($this->urls as $url) {
+            $date = $url->urlKeywordData()->orderBy('date', 'desc')->limit(1)->first();
+
+            if($date) {
+                $date = Carbon::createFromFormat('Y-m-d', $date->date);
+                if (is_null($lastGSCExpandData)) {
+                    $lastGSCExpandData = $date;
+                } elseif ($lastGSCExpandData->lt($date)) {
+                    $lastGSCExpandData = $date;
+                }
+            }
+        }
+
+        $this->lastGSCExpandData = $lastGSCExpandData;
+    }
+
 }

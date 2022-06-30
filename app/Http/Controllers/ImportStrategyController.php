@@ -228,8 +228,15 @@ class ImportStrategyController extends Controller
             }
         }
 
+        $imports = $imports->orderBy('id', 'desc')->paginate($count);
+
+        foreach ($imports as $import) {
+            $import->setLastGAExpandDate();
+            $import->setLastGSCExpandDate();
+        }
+
         return response([
-            'imports' => $imports->orderBy('id', 'desc')->paginate($count),
+            'imports' => $imports,
         ], 200);
     }
 
@@ -276,8 +283,12 @@ class ImportStrategyController extends Controller
      */
     public function show(Import $import): Response
     {
+        $import = Import::with(['user', 'project'])->find($import->id);
+        $import->setLastGAExpandDate();
+        $import->setLastGSCExpandDate();
+
         return response([
-            'import' => Import::with(['user', 'project'])->find($import->id),
+            'import' => $import,
         ], 200);
     }
 
