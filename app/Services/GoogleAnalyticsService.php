@@ -514,9 +514,9 @@ class GoogleAnalyticsService
                         Mail::to($user['email'])->send(new SendPullDataErrorMail($details));
                     }
                 }
-            } else {
-                throw new Exception($e->getMessage());
             }
+            throw new Exception($e->getMessage());
+
         }
     }
 
@@ -675,9 +675,8 @@ class GoogleAnalyticsService
                         Mail::to($user['email'])->send(new SendPullDataErrorMail($details));
                     }
                 }
-            } else {
-                throw new Exception($e->getMessage());
             }
+            throw new Exception($e->getMessage());
         }
 
         return $result;
