@@ -13,6 +13,8 @@ use App\Services\GoogleAnalyticsService;
 use Auth;
 use Carbon\Carbon;
 use Exception;
+use Google\Client;
+use Google\Service\Webmasters;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Http\JsonResponse;
@@ -1298,8 +1300,19 @@ class ImportStrategyController extends Controller
      */
     public function getGscAuthLink()
     {
+        $link = '';
+
+        if(file_exists(GoogleAnalyticsService::getGSCOAuthCredsPath())) {
+            $client = new Client();
+            $client->setAuthConfig(GoogleAnalyticsService::getGSCOAuthCredsPath());
+            $client->addScope(Webmasters::WEBMASTERS_READONLY);
+            $client->setAccessType('offline');
+            $client->setPrompt('consent');
+            $link = $client->createAuthUrl();
+        }
+
         return response([
-            'link' => $this->ga->getGSCAuthorizedClient()->createAuthUrl(),
+            'link' => $link,
         ], 200);
     }
 }
