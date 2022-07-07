@@ -45,11 +45,6 @@ class StartPageController extends Controller
         ]);
         $data = [];
         if(isset($request->code)) {
-//            $authCodePath = GoogleAnalyticsService::getAuthCodePath();
-//            if (!file_exists(dirname($authCodePath))) {
-//                mkdir(dirname($authCodePath), 0700, true);
-//            }
-//            file_put_contents($authCodePath, $request->code);
             $data['code'] = $request->code;
         }
 
@@ -80,7 +75,7 @@ class StartPageController extends Controller
 
     public function handle(Request $request): RedirectResponse
     {
-        $fields = $request->validate([
+        $request->validate([
             'analyticsCreds' => 'file',
             'gscCreds' => 'file',
             'accessToken' => 'file',

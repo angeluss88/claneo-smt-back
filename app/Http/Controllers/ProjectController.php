@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ProjectIndexRequest;
+use App\Http\Requests\ProjectStoreRequest;
+use App\Http\Requests\ProjectUpdateRequest;
 use App\Models\Client;
 use App\Models\Project;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Validation\Rule;
 
 class ProjectController extends Controller
 {
@@ -174,10 +175,10 @@ class ProjectController extends Controller
      *     },
      * )
      *
-     * @param Request $request
+     * @param ProjectIndexRequest $request
      * @return Response
      */
-    public function index(Request $request): Response
+    public function index(ProjectIndexRequest $request): Response
     {
         $count = $request->count == '{count}' ? 10 : $request->count;
 
@@ -226,28 +227,12 @@ class ProjectController extends Controller
      *     },
      * )
      *
-     * @param Request $request
+     * @param ProjectStoreRequest $request
      * @return Response
      */
-    public function store(Request $request): Response
+    public function store(ProjectStoreRequest $request): Response
     {
-        $fields = $request->validate([
-            'domain' => 'required|unique:projects,domain|string|max:255',
-            'client_id' => 'required_without:client|exists:clients,id',
-            'client' => 'required_without:client_id|exists:clients,name',
-            'ga_property_id' => 'max:20',
-            'ua_property_id' => 'max:20',
-            'ua_view_id' => 'max:20',
-            'strategy'  => [
-                'required',
-                'max:255',
-                Rule::in([ Project::GA_STRATEGY, Project::UA_STRATEGY, Project::NO_EXPAND_STRATEGY]),
-            ],
-            'expand_gsc'  => [
-                'required',
-                Rule::in([ 0,1 ]),
-            ],
-        ]);
+        $fields = $request->validated();
 
         $project = Project::create([
             'domain' => $fields['domain'],
@@ -358,32 +343,13 @@ class ProjectController extends Controller
      *     },
      * )
      *
-     * @param Request $request
+     * @param ProjectUpdateRequest $request
      * @param Project $project
      * @return Response
      */
-    public function update(Request $request, Project $project): Response
+    public function update(ProjectUpdateRequest $request, Project $project): Response
     {
-        $fields = $request->validate([
-            'domain' => [
-                'string',
-                'max:255',
-                Rule::unique('projects')->ignore($project->id),
-            ],
-            'client_id' => 'exists:users,id',
-            'client' => 'exists:clients,name',
-            'ga_property_id' => 'max:20',
-            'ua_property_id' => 'max:20',
-            'ua_view_id' => 'max:20',
-            'strategy'  => [
-                'max:255',
-                Rule::in([ Project::GA_STRATEGY, Project::UA_STRATEGY, Project::NO_EXPAND_STRATEGY]),
-            ],
-            'expand_gsc'  => [
-                Rule::in([ 0,1 ]),
-            ],
-
-        ]);
+        $fields = $request->validated();
 
         $project->fill($fields)->save();
 

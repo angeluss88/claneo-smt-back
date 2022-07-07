@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\BaseIndexRequest;
+use App\Http\Requests\KeywordStoreRequest;
+use App\Http\Requests\KeywordUpdateRequest;
 use App\Models\Event;
 use App\Models\Keyword;
 use Auth;
@@ -165,10 +168,10 @@ class KeywordController extends Controller
      *     },
      * )
      *
-     * @param Request $request
+     * @param BaseIndexRequest $request
      * @return Response
      */
-    public function index(Request $request): Response
+    public function index(BaseIndexRequest $request): Response
     {
         $count = $request->count == '{count}' ? 10 : $request->count;
         return response([
@@ -209,38 +212,14 @@ class KeywordController extends Controller
      *     },
      * ).
      *
-     * @param Request $request
+     * @param KeywordStoreRequest $request
      * @return Response
      */
-    public function store(Request $request): Response
+    public function store(KeywordStoreRequest $request): Response
     {
-        $fields = $request->validate([
-            'keyword'                   => 'required|unique:keywords,keyword|string|max:255',
-            'search_volume'             => 'required|integer',
-            'search_volume_clustered'   => 'integer',
-            'current_ranking_url'       => 'max:255',
-            'featured_snippet_keyword'  => [
-                Rule::in(['ja', 'nein', 'yes', 'no', 'Ja', 'Nein', 'Yes', 'No']),
-            ],
-            'featured_snippet_owned'  => [
-                Rule::in(['ja', 'nein', 'yes', 'no', 'Ja', 'Nein', 'Yes', 'No']),
-            ],
-            'current_ranking_position'  => [
-                'required',
-                Rule::in(array_merge(range(1, 100),
-                   [ 'Nicht in Top 100', 'nicht in Top 100', 'Not in Top 100', 'not in Top 100'])),
-            ],
-            'search_intention'  => [
-                Rule::in(['informational', 'Informational', 'transaktional', 'Transaktional', 'transactional',
-                    'Informational/transaktional', 'informational/transaktional', 'informational/transactional', 'Informational/transactional',
-                    'navigational', 'Navigational']),
-            ],
-        ]);
-
+        $fields = $request->validated();
         unset($fields['import_id']);
-
         $fields = $this->replaceFields($fields);
-
         $keyword = Keyword::create($fields);
 
         Event::create([
@@ -354,37 +333,11 @@ class KeywordController extends Controller
      * @param  Keyword $keyword
      * @return Response
      */
-    public function update(Request $request, Keyword $keyword): Response
+    public function update(KeywordUpdateRequest $request, Keyword $keyword): Response
     {
-        $fields = $request->validate([
-            'keyword' => [
-                'string',
-                'max:255',
-                Rule::unique('keywords')->ignore($keyword->id),
-            ],
-            'search_volume' => 'integer',
-            'search_volume_clustered' => 'integer',
-            'current_ranking_url' => 'max:255',
-            'featured_snippet_keyword' => [
-                Rule::in(['ja', 'nein', 'yes', 'no', 'Ja', 'Nein', 'Yes', 'No']),
-            ],
-            'featured_snippet_owned' => [
-                Rule::in(['ja', 'nein', 'yes', 'no', 'Ja', 'Nein', 'Yes', 'No']),
-            ],
-            'current_ranking_position' => [
-                Rule::in(array_merge(range(1, 100), [ 'Nicht in Top 100', 'nicht in Top 100', 'Not in Top 100', 'not in Top 100'])),
-            ],
-            'search_intention' => [
-                Rule::in(['informational', 'Informational', 'transaktional', 'Transaktional', 'transactional',
-                    'Informational/transaktional', 'informational/transaktional', 'informational/transactional', 'Informational/transactional',
-                    'navigational', 'Navigational']),
-            ],
-        ]);
-
+        $fields = $request->validated();
         unset($fields['import_id']);
-
         $fields = $this->replaceFields($fields);
-
         $attributes = $keyword->getAttributes();
 
         $keyword->fill($fields)->save();

@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\BaseIndexRequest;
 use App\Models\Event;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
 class EventController extends Controller
@@ -162,10 +162,10 @@ class EventController extends Controller
      *     },
      * )
      *
-     * @param Request $request
+     * @param BaseIndexRequest $request
      * @return Response
      */
-    public function index(Request $request): Response
+    public function index(BaseIndexRequest $request): Response
     {
         $count = $request->count == '{count}' ? 10 : $request->count;
         return response([

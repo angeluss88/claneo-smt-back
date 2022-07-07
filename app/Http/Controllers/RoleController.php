@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\RoleStoreRequest;
+use App\Http\Requests\RoleUpdateRequest;
 use App\Models\Role;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
 class RoleController extends Controller
@@ -79,22 +80,14 @@ class RoleController extends Controller
      *     },
      * )
      *
-     * @param Request $request
+     * @param RoleStoreRequest $request
      * @return Response
      */
-    public function store(Request $request): Response
+    public function store(RoleStoreRequest $request): Response
     {
-        die('Coming soon...'); // @TODO add value and use it instead of name to identify, also add cascade delete
+        $fields = $request->validated();
 
-        $fields = $request->validate([
-            'name' => 'required|unique:roles,name|string|max:255',
-            'description' => 'required|string|max:255',
-        ]);
-
-        $role = Role::create([
-            'name' => $fields['name'],
-            'description' => $fields['description'],
-        ]);
+        $role = Role::create($fields);
 
         return response([
             'role' => $role
@@ -195,17 +188,13 @@ class RoleController extends Controller
      *     },
      * )
      *
-     * @param Request $request
+     * @param RoleUpdateRequest $request
      * @param Role $role
      * @return Response
      */
-    public function update(Request $request, Role $role): Response
+    public function update(RoleUpdateRequest $request, Role $role): Response
     {
-        die('Coming soon...');
-        $fields = $request->validate([
-            'name' => 'unique:roles,name|string|max:255',
-            'description' => 'string|max:255',
-        ]);
+        $fields = $request->validated();
 
         $role->fill($fields)->save();
 
@@ -251,8 +240,8 @@ class RoleController extends Controller
      */
     public function destroy(Role $role): Response
     {
-        die('Coming soon...');
-        $role->delete();
+        if($role->id > 4) // admin, Seo, Researcher and Client couldn't be deleted
+            $role->delete();
 
         return response([], 204);
     }

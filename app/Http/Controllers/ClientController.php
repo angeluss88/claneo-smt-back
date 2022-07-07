@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\BaseIndexRequest;
+use App\Http\Requests\ClientStoreRequest;
+use App\Http\Requests\ClientUpdateRequest;
 use App\Models\Client;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Validation\Rule;
 
 class ClientController extends Controller
 {
@@ -163,17 +164,15 @@ class ClientController extends Controller
      *     },
      * )
      *
-     * @param Request $request
+     * @param BaseIndexRequest $request
      * @return Response
      */
-    public function index(Request $request): Response
+    public function index(BaseIndexRequest $request): Response
     {
         $count = $request->count == '{count}' ? 10 : $request->count;
 
-        $clients = Client::with('users', 'projects');
-
         return response([
-            'clients' => $clients->paginate($count),
+            'clients' => Client::with('users', 'projects')->paginate($count),
         ], 200);
     }
 
@@ -210,19 +209,13 @@ class ClientController extends Controller
      *     },
      * )
      *
-     * @param Request $request
+     * @param ClientStoreRequest $request
      * @return Response
      */
-    public function store(Request $request): Response
+    public function store(ClientStoreRequest $request): Response
     {
-        $fields = $request->validate([
-            'name' => 'required|unique:clients,name|string|max:100',
-        ]);
-
-        $client = Client::create($fields);
-
         return response([
-            'client' => $client,
+            'client' => Client::create($request->validated()),
         ], 201);
     }
 
@@ -320,21 +313,13 @@ class ClientController extends Controller
      *     },
      * )
      *
-     * @param Request $request
-     * @param  Client  $client
+     * @param ClientUpdateRequest $request
+     * @param Client $client
      * @return Response
      */
-    public function update(Request $request, Client $client): Response
+    public function update(ClientUpdateRequest $request, Client $client): Response
     {
-        $fields = $request->validate([
-            'name' => [
-                'string',
-                'max:255',
-                Rule::unique('clients')->ignore($client->id),
-            ],
-        ]);
-
-        $client->fill($fields)->save();
+        $client->fill($request->validated())->save();
 
         return response([
             'client' => $client,

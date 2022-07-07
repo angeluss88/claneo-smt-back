@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\AccountEditRequest;
 use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
 
 class AccountController extends Controller
 {
@@ -38,27 +37,16 @@ class AccountController extends Controller
      *     },
      * )
      *
-     * @param Request $request
+     * @param AccountEditRequest $request
      * @return Response
      */
-    public function edit(Request $request): Response
+    public function edit(AccountEditRequest $request): Response
     {
-        $fields = $request->validate([
-            'first_name' => 'string|max:100',
-            'last_name' => 'string|max:100',
-            'email' => [
-                'email',
-                Rule::unique('users')->ignore(auth()->user()->id),
-            ],
-            'privacy_policy_flag' => 'boolean',
-            'password' => 'string',
-            'roles' => 'array',
-        ]);
-
+        $fields = $request->validated();
         /**
          * @var User $user
          */
-        $user = User::with(['roles', 'client', 'projects',])->find(auth()->user()->id);
+        $user = User::with(['roles', 'client', 'projects',])->find(auth()->id());
 
         if(isset($fields['password'])) {
             $user->password = Hash::make($fields['password']);
@@ -68,14 +56,14 @@ class AccountController extends Controller
             $user->roles()->sync($fields['roles']);
         }
 
-        if($user->hasRole('Client') == false) {
+        if(!$user->hasRole('Client')) {
             $user->client_id = null;
         }
 
         $user->fill($fields)->save();
 
         return response([
-            'user' => User::with(['roles', 'client', 'projects',])->find(auth()->user()->id),
+            'user' => User::with(['roles', 'client', 'projects',])->find(auth()->id()),
         ], 200);
     }
 
@@ -100,11 +88,10 @@ class AccountController extends Controller
      *     },
      *     )
      */
-    public function show(Request $request)
+    public function show()
     {
-        $user = User::with(['roles', 'client', 'projects',])->find($request->user()->id);
         return response([
-            'user' => $user,
+            'user' => User::with(['roles', 'client', 'projects',])->find(auth()->id()),
         ], 200);
     }
 }

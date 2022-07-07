@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\BaseIndexRequest;
+use App\Http\Requests\UserUpdateRequest;
 use App\Models\Client;
 use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
@@ -163,10 +163,10 @@ class UserController extends Controller
      *       {"bearerAuth": {}},
      *     },
      * )
-     * @param Request $request
+     * @param BaseIndexRequest $request
      * @return Response
      */
-    public function index(Request $request): Response
+    public function index(BaseIndexRequest $request): Response
     {
         $count = $request->count == '{count}' ? 10 : $request->count;
         return response([
@@ -268,25 +268,13 @@ class UserController extends Controller
      *     },
      * )
      *
-     * @param Request $request
+     * @param UserUpdateRequest $request
      * @param User $user
      * @return Response
      */
-    public function update(Request $request, User $user): Response
+    public function update(UserUpdateRequest $request, User $user): Response
     {
-        $fields = $request->validate([
-            'first_name' => 'string|max:100',
-            'last_name' => 'string|max:100',
-            'email' => [
-                'email',
-                Rule::unique('users')->ignore($user->id),
-            ],
-            'privacy_policy_flag' => 'boolean',
-            'password' => 'string',
-            'roles' => 'array',
-            'client' => 'string',
-            'client_id' => 'integer',
-        ]);
+        $fields = $request->validated();
 
         if(isset($fields['client'])) {
             $user->client_id = Client::whereName($fields['client'])->firstOrFail()->id;
@@ -296,7 +284,7 @@ class UserController extends Controller
             $user->roles()->sync($fields['roles']);
         }
 
-        if($user->hasRole('Client') == false) {
+        if(!$user->hasRole('Client')) {
             $user->client_id = null;
             unset($fields['client_id']);
         }
@@ -346,7 +334,7 @@ class UserController extends Controller
     public function destroy(User $user): Response
     {
         if($user->is_superadmin) {
-            return response(['message' => "can't delete superadmin"], 404);
+            return response(['message' => "can't delete super admin"], 404);
         }
         $user->delete();
 

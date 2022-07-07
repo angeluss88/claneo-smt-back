@@ -2,19 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UrlAggregationRequest;
+use App\Http\Requests\UrlIndexRequest;
+use App\Http\Requests\UrlStoreRequest;
+use App\Http\Requests\UrlUpdateRequest;
 use App\Models\Event;
 use App\Models\URL;
 use App\Models\UrlData;
 use App\Models\UrlKeywordData;
 use Auth;
 use Carbon\Carbon;
-use DateTime;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Validation\Rule;
 
 class UrlController extends Controller
 {
@@ -232,10 +233,10 @@ class UrlController extends Controller
      *     },
      * )
      *
-     * @param Request $request
+     * @param UrlIndexRequest $request
      * @return Response
      */
-    public function index(Request $request): Response
+    public function index(UrlIndexRequest $request): Response
     {
         $count = $request->count == '{count}' ? 10 : $request->count;
 
@@ -467,10 +468,10 @@ class UrlController extends Controller
      *     },
      * )
      *
-     * @param Request $request
+     * @param UrlAggregationRequest $request
      * @return Response
      */
-    public function urlAggregation (Request $request): Response
+    public function urlAggregation (UrlAggregationRequest $request): Response
     {
         $url = URL::with(['project', 'events', 'keywords', 'urlData', 'urlKeywordData']);
 
@@ -624,28 +625,14 @@ class UrlController extends Controller
      *     },
      * )
      *
-     * @param Request $request
+     * @param UrlStoreRequest $request
      * @return Response
      */
-    public function store(Request $request): Response
+    public function store(UrlStoreRequest $request): Response
     {
-        $fields = $request->validate([
-            'url'                   => 'required|unique:urls,url|string|max:255',
-            'project_id'            => 'integer',
-            'status' => [
-                'required',
-                Rule::in(['301', '200', 301, 200, 'NEW', 'new', 'NEU', 'neu']),
-            ],
-            'main_category'         => 'required|string|max:255',
-            'sub_category'          => 'string|max:255',
-            'sub_category2'         => 'string|max:255',
-            'sub_category3'         => 'string|max:255',
-            'sub_category4'         => 'string|max:255',
-            'sub_category5'         => 'string|max:255',
-            'page_type'             => 'string|max:255',
-        ]);
+        $fields = $request->validated();
 
-        if(in_array($fields['status'], ['new', 'NEU', 'neu'])) {
+        if(isset($fields['status']) && in_array($fields['status'], ['new', 'NEU', 'neu'])) {
             $fields['status'] = 'NEW';
         }
 
@@ -758,31 +745,13 @@ class UrlController extends Controller
      *     },
      * )
      *
-     * @param Request $request
-     * @param  URL $url
+     * @param UrlUpdateRequest $request
+     * @param URL $url
      * @return Response
      */
-    public function update(Request $request, URL $url): Response
+    public function update(UrlUpdateRequest $request, URL $url): Response
     {
-        $fields = $request->validate([
-            'url' => [
-                'string',
-                'max:255',
-                Rule::unique('urls')->ignore($url->id),
-            ],
-            'status' => [
-                Rule::in(['301', '200', 301, 200, 'NEW', 'new', 'NEU', 'neu']),
-            ],
-            'project_id'            => 'integer',
-            'main_category'         => 'string|max:255',
-            'sub_category'          => 'string|max:255',
-            'sub_category2'         => 'string|max:255',
-            'sub_category3'         => 'string|max:255',
-            'sub_category4'         => 'string|max:255',
-            'sub_category5'         => 'string|max:255',
-            'page_type'             => 'string|max:255',
-            'keywords'              => 'array',
-        ]);
+        $fields = $request->validated();
 
         if(isset($fields['status']) && in_array($fields['status'], ['new', 'NEU', 'neu'])) {
             $fields['status'] = 'NEW';

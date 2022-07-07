@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ChangePasswordRequest;
+use App\Http\Requests\LoginRequest;
+use App\Http\Requests\RegisterRequest;
 use App\Mail\ForgotPasswordLinkMail;
 use App\Mail\SetPasswordLinkMail;
 use App\Models\Client;
+use App\Http\Requests\ForgotPasswordRequest;
 use Carbon\Carbon;
 use DB;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
@@ -49,25 +52,14 @@ class AuthController extends Controller
      *     },
      * )
      *
-     * @param Request $request
+     * @param RegisterRequest $request
      * @return Response
      */
-    public function register(Request $request): Response
+    public function register(RegisterRequest $request): Response
     {
-        $fields = $request->validate([
-            'email' => 'required|email|unique:users,email',
-            'first_name' => 'required|string|max:100',
-            'last_name' => 'required|string|max:100',
-            'roles' => 'array',
-            'client' => 'string',
-            'client_id' => 'integer',
-        ]);
-
+        $fields = $request->validated();
         $fields['password'] = Str::random();
 
-        /**
-         * @var $user User
-         */
         $user = User::create([
             'email' => $fields['email'],
             'first_name' => $fields['first_name'],
@@ -150,19 +142,12 @@ class AuthController extends Controller
      *     ),
      * )
      *
-     * @param Request $request
+     * @param LoginRequest $request
      * @return Response
      */
-    public function login(Request $request): Response
+    public function login(LoginRequest $request): Response
     {
-        $fields = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required|string',
-        ]);
-
-        /**
-         * @var $user User
-         */
+        $fields = $request->validated();
         $user = User::where('email', $fields['email'])->first();
 
         if(!$user || !Hash::check($fields['password'], $user->password)){
@@ -205,10 +190,9 @@ class AuthController extends Controller
      *     },
      * )
      *
-     * @param Request $request
      * @return array
      */
-    public function logout(Request $request): array
+    public function logout(): array
     {
         auth()->user()->tokens()->delete();
 
@@ -243,18 +227,12 @@ class AuthController extends Controller
      *     ),
      * )
      *
-     * @param Request $request
+     * @param ChangePasswordRequest $request
      * @return Response
      */
-    public function changePassword(Request $request): Response
+    public function changePassword(ChangePasswordRequest $request): Response
     {
-        $fields = $request->validate([
-            'token' => 'required',
-            'email' => 'required|email',
-            'password' => 'required|min:5|confirmed',
-            'password_confirmation' => 'required',
-            'privacy_policy_flag' => 'boolean',
-        ]);
+        $fields = $request->validated();
 
         $confirmation =  DB::table('password_resets')
             ->where('email', $fields['email'])
@@ -315,14 +293,12 @@ class AuthController extends Controller
      *     ),
      * )
      *
-     * @param Request $request
+     * @param ForgotPasswordRequest $request
      * @return Response
      */
-    public function forgotPassword(Request $request): Response
+    public function forgotPassword(ForgotPasswordRequest $request): Response
     {
-        $fields = $request->validate([
-            'email' => 'required|email',
-        ]);
+        $fields = $request->validated();
 
         $user = User::where('email', $fields['email'])->first();
 

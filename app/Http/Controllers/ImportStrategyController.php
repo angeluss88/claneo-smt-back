@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ContentStrategyRequest;
+use App\Http\Requests\ImportStrategyRequest;
+use App\Http\Requests\TimeLineDataRequest;
 use App\Models\Import;
 use App\Models\Keyword;
 use App\Models\Project;
@@ -203,10 +206,10 @@ class ImportStrategyController extends Controller
      *     },
      * )
      *
-     * @param Request $request
+     * @param ImportStrategyRequest $request
      * @return Response
      */
-    public function index(Request $request): Response
+    public function index(ImportStrategyRequest $request): Response
     {
         $imports = Import::with(['user', 'project']);
 
@@ -781,10 +784,10 @@ class ImportStrategyController extends Controller
      *     },
      * )
      *
-     * @param Request $request
+     * @param ContentStrategyRequest $request
      * @return Response
      */
-    public function csStrategy (Request $request): Response
+    public function csStrategy (ContentStrategyRequest $request): Response
     {
         $urls = URL::with('keywords');
 
@@ -931,10 +934,10 @@ class ImportStrategyController extends Controller
      *     },
      * )
      *
-     * @param Request $request
+     * @param TimeLineDataRequest $request
      * @return Response
      */
-    public function timelineData (Request $request): Response
+    public function timelineData (TimeLineDataRequest $request): Response
     {
         $urls = URL::with('keywords');
         $gaMetrics = ['ecom_conversion_rate', 'revenue', 'avg_order_value', 'bounce_rate',];
