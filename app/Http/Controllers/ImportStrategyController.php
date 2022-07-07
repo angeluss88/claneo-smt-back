@@ -1055,6 +1055,10 @@ class ImportStrategyController extends Controller
      *         response="404",
      *         description="Error: Not Found",
      *     ),
+     *     @OA\Response(
+     *         response="500",
+     *         description="Error: Internal Server Error",
+     *     ),
      *     @OA\Parameter(
      *         name="import",
      *         in="path",
@@ -1108,6 +1112,10 @@ class ImportStrategyController extends Controller
      *     @OA\Response(
      *         response="404",
      *         description="Error: Not Found",
+     *     ),
+     *     @OA\Response(
+     *         response="500",
+     *         description="Error: Internal Server Error",
      *     ),
      *     @OA\Parameter(
      *         name="import",
@@ -1168,6 +1176,10 @@ class ImportStrategyController extends Controller
      *         response="404",
      *         description="Error: Not Found",
      *     ),
+     *     @OA\Response(
+     *         response="500",
+     *         description="Error: Internal Server Error",
+     *     ),
      *     @OA\Parameter(
      *         name="project",
      *         in="path",
@@ -1219,6 +1231,10 @@ class ImportStrategyController extends Controller
      *     @OA\Response(
      *         response="404",
      *         description="Error: Not Found",
+     *     ),
+     *     @OA\Response(
+     *         response="500",
+     *         description="Error: Internal Server Error",
      *     ),
      *     @OA\Parameter(
      *         name="project",
