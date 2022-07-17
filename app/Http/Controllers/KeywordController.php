@@ -8,9 +8,7 @@ use App\Http\Requests\KeywordUpdateRequest;
 use App\Models\Event;
 use App\Models\Keyword;
 use Auth;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Validation\Rule;
 
 class KeywordController extends Controller
 {
@@ -329,8 +327,8 @@ class KeywordController extends Controller
      *     },
      * )
      *
-     * @param Request $request
-     * @param  Keyword $keyword
+     * @param KeywordUpdateRequest $request
+     * @param Keyword $keyword
      * @return Response
      */
     public function update(KeywordUpdateRequest $request, Keyword $keyword): Response
@@ -370,8 +368,10 @@ class KeywordController extends Controller
             $fields['featured_snippet_owned'] = str_replace('nein', 'no', $fields['featured_snippet_owned']);
         }
 
-        $fields['current_ranking_position'] = str_replace('Nicht', 'Not', $fields['current_ranking_position']);
-        $fields['current_ranking_position'] = str_replace('nicht', 'Not', $fields['current_ranking_position']);
+        if ( isset($fields['current_ranking_position']) ) {
+            $fields['current_ranking_position'] = str_replace('Nicht', 'Not', $fields['current_ranking_position']);
+            $fields['current_ranking_position'] = str_replace('nicht', 'Not', $fields['current_ranking_position']);
+        }
 
         if ( isset($fields['search_intention']) ) {
             $fields['search_intention'] = strtolower($fields['search_intention']);

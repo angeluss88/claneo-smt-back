@@ -187,7 +187,7 @@ class ClientController extends Controller
      *         description="Everything is fine",
      *         @OA\JsonContent(
      *             @OA\Property(
-     *             property="role",
+     *             property="client",
      *             type="object",
      *             ref="#/components/schemas/ClientResource",
      *         ))
