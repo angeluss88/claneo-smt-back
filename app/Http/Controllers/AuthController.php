@@ -11,6 +11,7 @@ use App\Models\Client;
 use App\Http\Requests\ForgotPasswordRequest;
 use Carbon\Carbon;
 use DB;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
@@ -143,21 +144,21 @@ class AuthController extends Controller
      * )
      *
      * @param LoginRequest $request
-     * @return Response
+     * @return JsonResponse
      */
-    public function login(LoginRequest $request): Response
+    public function login(LoginRequest $request): JsonResponse
     {
         $fields = $request->validated();
         $user = User::where('email', $fields['email'])->first();
 
         if(!$user || !Hash::check($fields['password'], $user->password)){
-            return response([
+            return response()->json([
                 'message' => 'Bad credentials',
             ], 401);
         }
 
         if($user->is_superadmin != 1 && $user->hasRole('Client') && !$user->privacy_policy_flag){
-            return response([
+            return response()->json([
                 'message' => 'User should accept Privacy Policy first',
             ], 403);
         }
@@ -168,7 +169,7 @@ class AuthController extends Controller
             'user' => $user,
             'token' => $token,
         ];
-        return response($response, 201);
+        return response()->json($response, 200);
     }
 
     /**
@@ -284,7 +285,7 @@ class AuthController extends Controller
      *         )),
      *     ),
      *     @OA\Response(
-     *         response="422",
+     *         response="500",
      *         description="The given data was invalid",
      *     ),
      *     @OA\RequestBody(
@@ -324,7 +325,9 @@ class AuthController extends Controller
             'valid_until' => $created_at->addDay()->format('Y-m-d H:i'),
         ];
 
-        Mail::to($user['email'])->send(new ForgotPasswordLinkMail($details));
+        if(!isset($fields['prevent_send']) ) {
+            Mail::to($user['email'])->send(new ForgotPasswordLinkMail($details));
+        }
 
         return response([
             'user' => $user,

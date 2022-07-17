@@ -25,6 +25,7 @@ class ForgotPasswordRequest extends FormRequest
     {
         return [
             'email' => 'required|email',
+            'prevent_send' => 'boolean'
         ];
     }
 }
