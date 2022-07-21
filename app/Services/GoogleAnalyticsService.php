@@ -618,7 +618,7 @@ class GoogleAnalyticsService
      * @return array
      * @throws Exception
      */
-    public function expandGSC(array $urls, array $keywords, Project $project, $date = null, bool $sendError = true): array
+    public function expandGSC(array $urls, array $keywords, Project $project, $date = null, bool $sendError = false): array
     {
         try {
             $result = [];
@@ -636,6 +636,8 @@ class GoogleAnalyticsService
                         || $site->getSiteUrl() == "https://" . $project->domain . '/'
                         || $site->getSiteUrl() == "http://" . $project->domain
                         || $site->getSiteUrl() == "https://" . $project->domain
+                        || $site->getSiteUrl() == "http://www." . $project->domain
+                        || $site->getSiteUrl() == "https://www." . $project->domain
                     ) {
                         $postBody = new Webmasters\SearchAnalyticsQueryRequest( [
                             'startDate'  => $date ?: Carbon::now()->subMonth(16)->format('Y-m-d'),
