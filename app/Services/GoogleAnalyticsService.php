@@ -638,6 +638,8 @@ class GoogleAnalyticsService
                         || $site->getSiteUrl() == "https://" . $project->domain
                         || $site->getSiteUrl() == "http://www." . $project->domain
                         || $site->getSiteUrl() == "https://www." . $project->domain
+                        || $site->getSiteUrl() == "http://www." . $project->domain . '/'
+                        || $site->getSiteUrl() == "https://www." . $project->domain . '/'
                     ) {
                         $postBody = new Webmasters\SearchAnalyticsQueryRequest( [
                             'startDate'  => $date ?: Carbon::now()->subMonth(16)->format('Y-m-d'),
