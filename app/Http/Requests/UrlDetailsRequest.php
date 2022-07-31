@@ -7,11 +7,11 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * @property int $project_id
+ * @property int $url_id
  * @property string|null $import_date
  * @property string $metric
  */
-class TimeLineDataRequest extends FormRequest
+class UrlDetailsRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -31,7 +31,7 @@ class TimeLineDataRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'project_id' => 'required',
+            'url_id' => 'required',
             'metric' => [
                 'required',
                 Rule::in(array_merge(GoogleAnalyticsService::GA_METRICS, GoogleAnalyticsService::GSC_METRICS)),

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ContentStrategyRequest;
 use App\Http\Requests\ImportStrategyRequest;
 use App\Http\Requests\TimeLineDataRequest;
+use App\Http\Requests\UrlDetailsRequest;
 use App\Models\Import;
 use App\Models\Keyword;
 use App\Models\Project;
@@ -915,7 +916,7 @@ class ImportStrategyController extends Controller
      *         name="project_id",
      *         in="path",
      *         description="Project filter",
-     *         required=false,
+     *         required=true,
      *         example=1,
      *         @OA\Schema(
      *             type="integer",
@@ -925,7 +926,7 @@ class ImportStrategyController extends Controller
      *         name="metric",
      *         in="path",
      *         description="Metric ['ecom_conversion_rate', 'revenue', 'avg_order_value', 'bounce_rate', 'position', 'clicks', 'impressions', 'ctr']",
-     *         required=false,
+     *         required=true,
      *         example="clicks",
      *         @OA\Schema(
      *             type="string",
@@ -938,98 +939,58 @@ class ImportStrategyController extends Controller
      *
      * @param TimeLineDataRequest $request
      * @return Response
+     * @throws Exception
      */
     public function timelineData (TimeLineDataRequest $request): Response
     {
         $urls = URL::with('keywords');
-        $gaMetrics = ['ecom_conversion_rate', 'revenue', 'avg_order_value', 'bounce_rate',];
-        $gscMetrics = ['position', 'clicks', 'impressions', 'ctr',];
-        $metrics = array_merge($gaMetrics, $gscMetrics);
         $dateData = [];
 
-
-        if ($request->project_id && $request->project_id !== '{project_id}') {
-            $urls->where('project_id', (int) $request->project_id);
-        } else {
-            return response([
-                'error' => "Project_id is required",
-            ], 500);
-        }
+        $urls->where('project_id', $request->project_id);
 
         if ($request->import_date) {
-            $dates = explode('-', $request->import_date);
-            if(count($dates) == 2) {
-                $from = Carbon::createFromFormat('Y.m.d', $dates[0])->subDay();
-                $to = Carbon::createFromFormat('Y.m.d', $dates[1]);
+            $urls = $this->filterTimeLineByImportData($request->import_date, $request->metric, $urls);
+        }
 
-                if($from && $to) {
-                    if(in_array($request->metric, $gaMetrics)) {
-                        $urls->with([
-                            'urlData' => function (HasMany $query) use ($from, $to) {
-                                $query->whereBetween('date', [$from, $to]);
-                            }
-                        ]);
-                    } else if(in_array($request->metric, $gscMetrics)) {
-                        $urls->with([
-                            'urlKeywordData' => function (HasManyThrough $query) use ($from, $to) {
-                                $query->whereBetween('date', [$from, $to]);
-                            }
-                        ]);
+        $urls = $urls->get();
+        $metric = $request->metric;
+
+        if(in_array($metric, GoogleAnalyticsService::GA_METRICS)) {
+            foreach ($urls as $url) {
+                foreach ($url->urlData as $urlData) {
+                    if(!isset($dateData[$urlData->date])) {
+                        $dateData[$urlData->date] = $urlData->$metric;
                     } else {
-                        return response([
-                            'error' => "Metric should be in array [" . implode(', ', $metrics) . "]",
-                        ], 500);
-                    }
-                }
-            }
-        }
-
-        if($request->metric && $request->metric != "{metric}") {
-            /**
-             * @var URL $url
-             */
-            $urls = $urls->get();
-            $metric = $request->metric;
-
-            if(in_array($metric, $gaMetrics)) {
-                foreach ($urls as $url) {
-                    foreach ($url->urlData as $urlData) {
-                        if(!isset($dateData[$urlData->date])) {
-                            $dateData[$urlData->date] = $urlData->$metric;
-                        } else {
-                            $dateData[$urlData->date] += $urlData->$metric;
-                        }
-                    }
-                }
-                if(in_array($metric, ['ecom_conversion_rate', 'avg_order_value', 'bounce_rate']) && count($urls) !== 0) {
-                    foreach ($dateData as $k => $v) {
-                        $dateData[$k] /= count($urls);
+                        $dateData[$urlData->date] += $urlData->$metric;
                     }
                 }
             }
 
-            if(in_array($metric, $gscMetrics)) {
-                foreach ($urls as $url) {
-                    foreach ($url->urlKeywordData as $urlData) {
-                        if(!isset($dateData[$urlData->date])) {
-                            $dateData[$urlData->date] = [$urlData->$metric, 1];
-                        } else {
-                            $dateData[$urlData->date] = [
-                                $dateData[$urlData->date][0] + $urlData->$metric,
-                                ++$dateData[$urlData->date][1],
-                            ];
-                        }
-                    }
-                }
+            if(in_array($metric, ['ecom_conversion_rate', 'avg_order_value', 'bounce_rate']) && count($urls) !== 0) {
                 foreach ($dateData as $k => $v) {
-                    $dateData[$k] = in_array($metric, ['position', 'ctr']) ? $v[0]/$v[1] : (float) $v[0];
+                    $dateData[$k] /= count($urls);
                 }
             }
-        } else {
-            return response([
-                'error' => "Param metric is required",
-            ], 500);
         }
+
+        if(in_array($metric, GoogleAnalyticsService::GSC_METRICS)) {
+            foreach ($urls as $url) {
+                foreach ($url->urlKeywordData as $urlData) {
+                    if(!isset($dateData[$urlData->date])) {
+                        $dateData[$urlData->date] = [$urlData->$metric, 1];
+                    } else {
+                        $dateData[$urlData->date] = [
+                            $dateData[$urlData->date][0] + $urlData->$metric,
+                            ++$dateData[$urlData->date][1],
+                        ];
+                    }
+                }
+            }
+            foreach ($dateData as $k => $v) {
+                $dateData[$k] = in_array($metric, ['position', 'ctr']) ? $v[0]/$v[1] : (float) $v[0];
+            }
+        }
+
 
         foreach ($dateData as $k => $v) {
             $dateData[$k] = (float) $v;
@@ -1040,6 +1001,150 @@ class ImportStrategyController extends Controller
         return response([
             'timeLineData' => $dateData,
         ], 200);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/urlDetails?import_date={import_date}&url_id={url_id}&metric={metric}",
+     *     operationId="urlDetails",
+     *     tags={"Content Strategy"},
+     *     summary="UrlDetails",
+     *     @OA\Response(
+     *         response="200",
+     *         description="Everything is fine",
+     *         @OA\JsonContent(
+     *             @OA\Property(
+     *                 property="urlDetails",
+     *                 type="array",
+     *                 collectionFormat="multi",
+     *                 @OA\Items(ref="#/components/schemas/TimelineData"),
+     *             ),
+     *         ),
+     *     ),
+     *     @OA\Response(
+     *         response="401",
+     *         description="Unauthenticated",
+     *     ),
+     *     @OA\Parameter(
+     *         name="import_date",
+     *         in="path",
+     *         description="Import date range (Y.m.d-Y.m.d)",
+     *         required=false,
+     *         example="2021.11.03-2021.12.03",
+     *         @OA\Schema(
+     *             type="string",
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="url_id",
+     *         in="path",
+     *         description="Url ID",
+     *         required=true,
+     *         example=1,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="metric",
+     *         in="path",
+     *         description="Metric ['ecom_conversion_rate', 'revenue', 'avg_order_value', 'bounce_rate', 'position', 'clicks', 'impressions', 'ctr']",
+     *         required=true,
+     *         example="clicks",
+     *         @OA\Schema(
+     *             type="string",
+     *         )
+     *     ),
+     *     security={
+     *       {"bearerAuth": {}},
+     *     },
+     * )
+     *
+     * @param UrlDetailsRequest $request
+     * @return Response
+     * @throws Exception
+     */
+    public function urlDetails (UrlDetailsRequest $request): Response
+    {
+        $url = URL::findOrFail($request->url_id)->with('keywords');
+        $urlDetails = [];
+
+        if ($request->import_date) {
+            $url = $this->filterTimeLineByImportData($request->import_date, $request->metric, $url);
+        }
+
+        $metric = $request->metric;
+
+        $url = $url->first();
+
+        if(in_array($metric, GoogleAnalyticsService::GA_METRICS)) {
+            foreach ($url->urlData as $urlData) {
+                if(!isset($urlDetails[$urlData->date])) {
+                    $urlDetails[$urlData->date] = $urlData->$metric;
+                } else {
+                    $urlDetails[$urlData->date] += $urlData->$metric;
+                }
+            }
+        }
+
+        if(in_array($metric, GoogleAnalyticsService::GSC_METRICS)) {
+            foreach ($url->urlKeywordData as $urlData) {
+                if(!isset($urlDetails[$urlData->date])) {
+                    $urlDetails[$urlData->date] = [$urlData->$metric, 1];
+                } else {
+                    $urlDetails[$urlData->date] = [
+                        $urlDetails[$urlData->date][0] + $urlData->$metric,
+                        ++$urlDetails[$urlData->date][1],
+                    ];
+                }
+            }
+
+            foreach ($urlDetails as $k => $v) {
+                $urlDetails[$k] = in_array($metric, ['position', 'ctr']) ? $v[0]/$v[1] : (float) $v[0];
+            }
+        }
+
+        foreach ($urlDetails as $k => $v) {
+            $urlDetails[$k] = (float) $v;
+        }
+
+        ksort($urlDetails);
+
+        return response([
+            'urlDetails' => $urlDetails,
+        ], 200);
+    }
+
+    /**
+     * @throws Exception
+     */
+    protected function filterTimeLineByImportData ($date, $metric, $urlModel)
+    {
+        $dates = explode('-', $date);
+        if(count($dates) == 2) {
+            $from = Carbon::createFromFormat('Y.m.d', $dates[0])->subDay();
+            $to = Carbon::createFromFormat('Y.m.d', $dates[1]);
+
+            if($from && $to) {
+                if(in_array($metric, GoogleAnalyticsService::GA_METRICS)) {
+                    $urlModel->with([
+                        'urlData' => function (HasMany $query) use ($from, $to) {
+                            $query->whereBetween('date', [$from, $to]);
+                        }
+                    ]);
+                } else if(in_array($metric, GoogleAnalyticsService::GSC_METRICS)) {
+                    $urlModel->with([
+                        'urlKeywordData' => function (HasManyThrough $query) use ($from, $to) {
+                            $query->whereBetween('date', [$from, $to]);
+                        }
+                    ]);
+                } else {
+                    throw new Exception('Unknown metric');
+                }
+            }
+        }
+
+        return $urlModel;
     }
 
     /**

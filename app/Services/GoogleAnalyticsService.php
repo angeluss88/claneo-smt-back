@@ -46,6 +46,9 @@ class GoogleAnalyticsService
     const GOOGLE_OAUTH_TOKEN_URL = 'https://accounts.google.com/o/oauth2/token';
     const METHOD_POST = 'POST';
 
+    const GA_METRICS = ['ecom_conversion_rate', 'revenue', 'avg_order_value', 'bounce_rate',];
+    const GSC_METRICS = ['position', 'clicks', 'impressions', 'ctr',];
+
         public function __construct ()
     {
         $this->key_file = config_path() . DIRECTORY_SEPARATOR . $this->key_file;
