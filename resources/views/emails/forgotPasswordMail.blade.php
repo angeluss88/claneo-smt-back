@@ -5,7 +5,7 @@
 </head>
     <body>
         <p style="text-align: center">
-            <img width="300" src="{{ $message->embed(public_path() . '/Claneo_logo.png') }}" alt />
+            <img width="300" src="{{ $message->embed(public_path() . '/Claneo_logo_mails.png') }}" alt />
         </p>
         <h2 style="text-align: center; background-color: #98b2d3; padding-top: 20px;">
             {{ __('Forgot password') }}?
