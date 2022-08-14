@@ -18,7 +18,7 @@ class EventControllerTest extends TestCase
      */
     public function test_index()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $response = $this->actingAs($user)->get('/api/events');
 
         $response

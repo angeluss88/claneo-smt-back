@@ -21,7 +21,7 @@ class ImportStrategyControllerTest extends TestCase
      */
     public function test_index()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $response = $this->actingAs($user)->get('/api/imports');
 
         $response->assertStatus(200);
@@ -36,7 +36,7 @@ class ImportStrategyControllerTest extends TestCase
 
     public function test_show()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $import = Import::first('id');
 
         if(!$import) {
@@ -77,7 +77,7 @@ class ImportStrategyControllerTest extends TestCase
 
     public function test_show_not_found()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $response = $this->actingAs($user)->get('/api/imports/' . 0);
 
         $response->assertStatus(404);
@@ -85,7 +85,7 @@ class ImportStrategyControllerTest extends TestCase
 
     public function test_example()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $response = $this->actingAs($user)->get('/api/import_example');
 
@@ -96,7 +96,7 @@ class ImportStrategyControllerTest extends TestCase
 
     public function test_import()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $project = Project::first('id');
 
         $path = public_path(). "/files/is_example.csv";
@@ -125,7 +125,7 @@ class ImportStrategyControllerTest extends TestCase
 
     public function test_csStrategy()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $response = $this->actingAs($user)->get('/api/content_strategy_data?page=1&count=10&url=test&keyword=test&import_date=2021.11.03 00:00:00-2021.12.03 00:00:00&project_id=19&import_id=1');
 
@@ -145,7 +145,7 @@ class ImportStrategyControllerTest extends TestCase
 
     public function test_timelineData()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $metrics = array_merge(GoogleAnalyticsService::GA_METRICS, GoogleAnalyticsService::GSC_METRICS);
 
         $this->assertNotEmpty($metrics);
@@ -171,7 +171,7 @@ class ImportStrategyControllerTest extends TestCase
 
     public function test_timelineData_no_required_data()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $response = $this->actingAs($user) ->get('/api/timeline_data?import_date=2021.11.03-2021.12.03');
 
         $response
@@ -183,7 +183,7 @@ class ImportStrategyControllerTest extends TestCase
 
     public function test_timelineData_non_exists_metric()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $response = $this->actingAs($user) ->get('/api/timeline_data?project_id=19&metric=some_wrong_metric');
 
         $response
@@ -195,7 +195,7 @@ class ImportStrategyControllerTest extends TestCase
 
     public function test_expandGA()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $import = Import::latest()->first('id');
 
         if(!$import) {
@@ -232,7 +232,7 @@ class ImportStrategyControllerTest extends TestCase
 
     public function test_expandGA_non_exists_import()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $response = $this->actingAs($user)->get('/api/expandGA/0');
 
@@ -245,7 +245,7 @@ class ImportStrategyControllerTest extends TestCase
 
     public function test_expandGSC()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $import = Import::latest()->first('id');
 
         if(!$import) {
@@ -282,7 +282,7 @@ class ImportStrategyControllerTest extends TestCase
 
     public function test_expandGSC_non_exists_import()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $response = $this->actingAs($user)->get('/api/expandGSC/0');
 
@@ -295,7 +295,7 @@ class ImportStrategyControllerTest extends TestCase
 
     public function test_expandGAForProject()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $project = Project::latest()->first('id');
 
         if(!$project) {
@@ -328,7 +328,7 @@ class ImportStrategyControllerTest extends TestCase
 
     public function test_expandGAForProject_non_exists_project()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $response = $this->actingAs($user)->get('/api/expandGAForProject/0');
 
@@ -341,7 +341,7 @@ class ImportStrategyControllerTest extends TestCase
 
     public function test_expandGSCForProject()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $project = Project::latest()->first('id');
 
         if(!$project) {
@@ -374,7 +374,7 @@ class ImportStrategyControllerTest extends TestCase
 
     public function test_expandGSCForProject_non_exists_project()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $response = $this->actingAs($user)->get('/api/expandGSCForProject/0');
 
@@ -387,7 +387,7 @@ class ImportStrategyControllerTest extends TestCase
 
     public function test_urlDetails()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $metrics = array_merge(GoogleAnalyticsService::GA_METRICS, GoogleAnalyticsService::GSC_METRICS);
         $url = URL::latest()->first('id');
 
@@ -415,7 +415,7 @@ class ImportStrategyControllerTest extends TestCase
 
     public function test_urlDetails_non_exists_url()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $metrics = GoogleAnalyticsService::GA_METRICS;
 
         $this->assertNotEmpty($metrics);
@@ -434,7 +434,7 @@ class ImportStrategyControllerTest extends TestCase
 
     public function test_urlDetails_wrong_metric()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $url = URL::latest()->first('id');
 
         $response = $this
@@ -451,7 +451,7 @@ class ImportStrategyControllerTest extends TestCase
 
     public function test_getGscAuthLink()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $response = $this->actingAs($user)->get('/api/getGscAuthLink');
 
         $response->assertStatus(200);

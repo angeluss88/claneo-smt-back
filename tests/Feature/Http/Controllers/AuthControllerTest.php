@@ -23,7 +23,7 @@ class AuthControllerTest extends TestCase
     public function test_login()
     {
         $response = $this->postJson('/api/login', [
-            'email' => 'admin@loc',
+            'email' => env('APP_ADMIN_EMAIL', 'admin@loc'),
             'password' => '12345'
         ]);
 
@@ -33,13 +33,13 @@ class AuthControllerTest extends TestCase
             })
             ->assertStatus(200);
 
-        $this->actingAs(User::whereEmail('admin@loc')->firstOrFail());
+        $this->actingAs(User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->firstOrFail());
         auth()->user()->tokens()->delete(); // @TODO remove after configuring refreshDB
     }
 
     public function test_register_wrong_data()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $response = $this->actingAs($user)
             ->post('/api/register',[
@@ -53,7 +53,7 @@ class AuthControllerTest extends TestCase
     {
         User::whereEmail('delete_this_if_you_see@loc')->delete();
 
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $response = $this->actingAs($user)
             ->post('/api/register',[
@@ -89,7 +89,7 @@ class AuthControllerTest extends TestCase
     {
         User::whereEmail('delete_this_if_you_see@loc')->delete();
 
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $client = Client::firstOrFail();
 
         $response = $this->actingAs($user)
@@ -112,7 +112,7 @@ class AuthControllerTest extends TestCase
 
     public function test_logout()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $response = $this->actingAs($user)->post('/api/logout');
 

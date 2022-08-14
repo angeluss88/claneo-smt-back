@@ -19,7 +19,7 @@ class ClientControllerTest extends TestCase
      */
     public function test_index()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $response = $this->actingAs($user)->get('/api/clients');
 
         $response
@@ -41,7 +41,7 @@ class ClientControllerTest extends TestCase
     {
         Client::whereName('test_client_for_delete')->delete();
 
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $response = $this->actingAs($user)->post('/api/clients', [
             'name' => 'test_client_for_delete'
         ]);
@@ -60,7 +60,7 @@ class ClientControllerTest extends TestCase
     {
         Client::whereName('test_client_for_delete')->delete();
 
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $response = $this->actingAs($user)->post('/api/clients', [
             'name1' => 'test_client_for_delete'
         ]);
@@ -77,7 +77,7 @@ class ClientControllerTest extends TestCase
         Client::whereName('test_client_for_delete')->delete();
 
         if($name = Client::first()->name) {
-            $user = User::whereEmail('admin@loc')->first();
+            $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
             $response = $this->actingAs($user)->post('/api/clients', [
                 'name' => $name,
             ]);
@@ -105,7 +105,7 @@ class ClientControllerTest extends TestCase
     {
         Client::whereName('test_client_for_delete')->delete();
 
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $client = Client::create([
             'name' => 'test_client_for_delete',
@@ -131,7 +131,7 @@ class ClientControllerTest extends TestCase
     {
         Client::whereName('test_client_for_delete')->delete();
 
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $last = DB::table('clients')->latest('id')->first();
         $id =  $last ? $last->id : 0;
@@ -146,7 +146,7 @@ class ClientControllerTest extends TestCase
         Client::whereName('test_client_for_delete')->delete();
         Client::whereName('updated_test_client_for_delete')->delete();
 
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $client = Client::create([
             'name' => 'test_client_for_delete',
@@ -193,7 +193,7 @@ class ClientControllerTest extends TestCase
     public function test_update_not_found()
     {
         Client::whereName('test_client_for_delete')->delete();
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $last = DB::table('clients')->latest('id')->first();
         $id =  $last ? $last->id : 0;
 
@@ -209,7 +209,7 @@ class ClientControllerTest extends TestCase
     {
         Client::whereName('test_client_for_delete')->delete();
 
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $client = Client::create([
             'name' => 'delete_me',
@@ -247,7 +247,7 @@ class ClientControllerTest extends TestCase
 
     public function test_destroy_not_found()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $last = DB::table('clients')->latest('id')->first();
         $id =  $last ? $last->id : 0;
 

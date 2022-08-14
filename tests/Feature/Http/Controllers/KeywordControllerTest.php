@@ -19,7 +19,7 @@ class KeywordControllerTest extends TestCase
      */
     public function test_index()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $response = $this->actingAs($user)->get('/api/keywords');
 
         $response
@@ -41,7 +41,7 @@ class KeywordControllerTest extends TestCase
     {
         Keyword::whereKeyword('test_keyword_for_delete')->delete();
 
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $response = $this->actingAs($user)->post('/api/keywords', [
             'keyword' => 'test_keyword_for_delete',
             "search_volume" => 1,
@@ -67,7 +67,7 @@ class KeywordControllerTest extends TestCase
     {
         Keyword::whereKeyword('test_keyword_for_delete')->delete();
 
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $response = $this->actingAs($user)->post('/api/keywords', [
             'keyword1' => 'test_keyword_for_delete',
             "search_volume" => 1,
@@ -91,7 +91,7 @@ class KeywordControllerTest extends TestCase
         Keyword::whereKeyword('test_keyword_for_delete')->delete();
 
         if($keyword = Keyword::first()->keyword) {
-            $user = User::whereEmail('admin@loc')->first();
+            $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
             $response = $this->actingAs($user)->post('/api/keywords', [
                 'keyword' => $keyword,
                 "search_volume" => 1,
@@ -133,7 +133,7 @@ class KeywordControllerTest extends TestCase
     {
         Keyword::whereKeyword('test_keyword_for_delete')->delete();
 
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $keyword = Keyword::create([
             'keyword' => 'test_keyword_for_delete',
@@ -166,7 +166,7 @@ class KeywordControllerTest extends TestCase
     {
         Keyword::whereKeyword('test_keyword_for_delete')->delete();
 
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $last = DB::table('keywords')->latest('id')->first();
         $id =  $last ? $last->id : 0;
@@ -181,7 +181,7 @@ class KeywordControllerTest extends TestCase
         Keyword::whereKeyword('test_keyword_for_delete')->delete();
         Keyword::whereKeyword('updated_test_keyword_for_delete')->delete();
 
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $keyword = Keyword::create([
             'keyword' => 'test_keyword_for_delete',
@@ -244,7 +244,7 @@ class KeywordControllerTest extends TestCase
     public function test_update_not_found()
     {
         Keyword::whereKeyword('test_keyword_for_delete')->delete();
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $last = DB::table('keywords')->latest('id')->first();
         $id =  $last ? $last->id : 0;
 
@@ -260,7 +260,7 @@ class KeywordControllerTest extends TestCase
     {
         Keyword::whereKeyword('test_keyword_for_delete')->delete();
 
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $keyword = Keyword::create([
             'keyword' => 'delete_me',
@@ -312,7 +312,7 @@ class KeywordControllerTest extends TestCase
 
     public function test_destroy_not_found()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $last = DB::table('keywords')->latest('id')->first();
         $id =  $last ? $last->id : 0;
 

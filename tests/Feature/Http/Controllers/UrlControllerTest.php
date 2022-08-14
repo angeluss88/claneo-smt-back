@@ -19,7 +19,7 @@ class UrlControllerTest extends TestCase
      */
     public function test_index()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $response = $this->actingAs($user)->get('/api/urls');
 
         $response
@@ -41,7 +41,7 @@ class UrlControllerTest extends TestCase
     {
         URL::whereUrl('test_url_for_delete')->delete();
 
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $response = $this->actingAs($user)->post('/api/urls', [
             'url' => 'test_url_for_delete',
             'status' => 'new',
@@ -62,7 +62,7 @@ class UrlControllerTest extends TestCase
     {
         URL::whereUrl('test_url_for_delete')->delete();
 
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $response = $this->actingAs($user)->post('/api/urls', [
             'url1' => 'test_url_for_delete',
             'status' => 'new',
@@ -81,7 +81,7 @@ class UrlControllerTest extends TestCase
         URL::whereUrl('test_url_for_delete')->delete();
 
         if($url = URL::first()->url) {
-            $user = User::whereEmail('admin@loc')->first();
+            $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
             $response = $this->actingAs($user)->post('/api/urls', [
                 'url' => $url,
                 'status' => 'new',
@@ -111,7 +111,7 @@ class UrlControllerTest extends TestCase
     {
         URL::whereUrl('test_url_for_delete')->delete();
 
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $url = URL::create([
             'url' => 'test_url_for_delete',
@@ -139,7 +139,7 @@ class UrlControllerTest extends TestCase
     {
         URL::whereUrl('test_url_for_delete')->delete();
 
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $last = DB::table('urls')->latest('id')->first();
         $id =  $last ? $last->id : 0;
@@ -153,7 +153,7 @@ class UrlControllerTest extends TestCase
     {
         URL::whereUrl('test_url_for_delete')->delete();
 
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $url = URL::create([
             'url' => 'test_url_for_delete',
@@ -205,7 +205,7 @@ class UrlControllerTest extends TestCase
     public function test_update_not_found()
     {
         URL::whereUrl('test_url_for_delete')->delete();
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $last = DB::table('urls')->latest('id')->first();
         $id =  $last ? $last->id : 0;
 
@@ -221,7 +221,7 @@ class UrlControllerTest extends TestCase
     {
         URL::whereUrl('test_url_for_delete')->delete();
 
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $url = URL::create([
             'url' => 'delete_me',
@@ -263,7 +263,7 @@ class UrlControllerTest extends TestCase
 
     public function test_destroy_not_found()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $last = DB::table('urls')->latest('id')->first();
         $id =  $last ? $last->id : 0;
 
@@ -273,7 +273,7 @@ class UrlControllerTest extends TestCase
 
     public function test_urlAggregation()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $response = $this->actingAs($user)->get('/api/urls_aggregation');
 
         $response

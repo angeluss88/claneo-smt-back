@@ -18,7 +18,7 @@ class UserControllerTest extends TestCase
      */
     public function test_index()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $response = $this->actingAs($user)->get('/api/users');
 
         $response
@@ -40,7 +40,7 @@ class UserControllerTest extends TestCase
     {
         User::whereEmail('test_user_delete_me@loc')->delete();
 
-        $auth = User::whereEmail('admin@loc')->first();
+        $auth = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $user = User::create([
             'first_name' => 'test_user_for_delete',
@@ -71,7 +71,7 @@ class UserControllerTest extends TestCase
     {
         User::whereEmail('test_user_delete_me@loc')->delete();
 
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $id = DB::table('users')->latest('id')->first()->id;
 
@@ -85,7 +85,7 @@ class UserControllerTest extends TestCase
         User::whereEmail('test_user_delete_me@loc')->delete();
         User::whereEmail('test_user2_delete_me@loc')->delete();
 
-        $auth = User::whereEmail('admin@loc')->first();
+        $auth = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $user = User::create([
             'first_name' => 'test_user_for_delete',
@@ -139,7 +139,7 @@ class UserControllerTest extends TestCase
     public function test_update_not_found()
     {
         User::whereEmail('test_user_delete_me@loc')->delete();
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $id = DB::table('users')->latest('id')->first()->id;
 
         $response = $this->actingAs($user)->put('/api/users/' . ++$id, [
@@ -154,7 +154,7 @@ class UserControllerTest extends TestCase
     {
         User::whereEmail('test_user_delete_me@loc')->delete();
 
-        $auth = User::whereEmail('admin@loc')->first();
+        $auth = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $user = User::create([
             'first_name' => 'test_user_for_delete',
@@ -198,7 +198,7 @@ class UserControllerTest extends TestCase
 
     public function test_destroy_not_found()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $id = DB::table('users')->latest('id')->first()->id;
 
         $response = $this->actingAs($user)->delete('/api/users/' . ++$id);

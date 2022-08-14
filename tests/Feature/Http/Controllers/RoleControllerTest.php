@@ -18,7 +18,7 @@ class RoleControllerTest extends TestCase
      */
     public function test_index()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $response = $this->actingAs($user)->get('/api/roles');
 
@@ -39,7 +39,7 @@ class RoleControllerTest extends TestCase
     {
         Role::whereName('delete_me')->delete();
 
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $response = $this->actingAs($user)->post('/api/roles', [
             'name' => 'delete_me',
@@ -79,7 +79,7 @@ class RoleControllerTest extends TestCase
     {
         Role::whereName('delete_me')->delete();
 
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $response = $this->actingAs($user)->post('/api/roles', [
             'name' => 'delete_me',
@@ -101,7 +101,7 @@ class RoleControllerTest extends TestCase
     {
         Role::whereName('delete_me')->delete();
 
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $role = Role::create([
             'name' => 'delete_me',
@@ -129,7 +129,7 @@ class RoleControllerTest extends TestCase
     {
         Role::whereName('delete_me')->delete();
 
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $id = \DB::table('roles')->latest('id')->first()->id + 1;
 
@@ -143,7 +143,7 @@ class RoleControllerTest extends TestCase
         Role::whereName('delete_me')->delete();
         Role::whereName('updated_test_role_delete_it')->delete();
 
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $role = Role::create([
             'name' => 'delete_me',
@@ -197,7 +197,7 @@ class RoleControllerTest extends TestCase
     public function test_update_not_found()
     {
         Role::whereName('delete_me')->delete();
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $id = \DB::table('roles')->latest('id')->first()->id + 1;
 
         $response = $this->actingAs($user)->put('/api/roles/' . $id, [
@@ -213,7 +213,7 @@ class RoleControllerTest extends TestCase
     {
         Role::whereName('delete_me')->delete();
 
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $role = Role::create([
             'name' => 'delete_me',
@@ -255,7 +255,7 @@ class RoleControllerTest extends TestCase
 
     public function test_destroy_not_found()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
         $id = \DB::table('roles')->latest('id')->first()->id + 1;
 
         $response = $this->actingAs($user)->delete('/api/roles/' . $id);

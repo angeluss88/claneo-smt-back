@@ -17,7 +17,7 @@ class AccountControllerTest extends TestCase
      */
     public function test_show()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', env('APP_ADMIN_EMAIL', 'admin@loc')))->first();
 
         $response = $this->actingAs($user)->get('/api/account/');
 
@@ -37,7 +37,7 @@ class AccountControllerTest extends TestCase
 
     public function test_edit()
     {
-        $user = User::whereEmail('admin@loc')->first();
+        $user = User::whereEmail(env('APP_ADMIN_EMAIL', 'admin@loc'))->first();
 
         $response = $this->actingAs($user)->post('/api/account/edit', [
             'first_name' => 'admin_test_updated',
