@@ -865,8 +865,9 @@ class ImportStrategyController extends Controller
             }
         }
 
-        $count = $request->count == '{count}' ? 10 : $request->count;
-        $page = $request->page == '{page}' ? 1 : (int) $request->page;
+
+        $count = is_null($request->count) || $request->count == '{count}' ? 10 : $request->count;
+        $page = is_null($request->page) || $request->page == '{page}' ? 1 : (int) $request->page;
         $offset = ($page-1)*$count;
 
         $data = array_slice($csData, $offset, $count);
