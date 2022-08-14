@@ -31,6 +31,8 @@ class Kernel extends ConsoleKernel
         $schedule->command('sanctum:prune-expired --hours=24')->daily();
 
         $schedule->call(function () {
+            $filepath = storage_path('test.txt');
+            file_put_contents($filepath, date('H:i:s') . '_______', FILE_APPEND);
             $ga = new GoogleAnalyticsService();
             $projects = Project::all();
 
@@ -50,7 +52,7 @@ class Kernel extends ConsoleKernel
                 }
             }
 
-        })->daily();
+        })->everyMinute();
     }
 
     /**
