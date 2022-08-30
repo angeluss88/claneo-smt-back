@@ -303,7 +303,7 @@ class SeoEventController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/seo_events/{seoEvent}",
+     *     path="/seo_events/{seo_event}",
      *     operationId="seo_events_show",
      *     tags={"Seo_Events"},
      *     summary="Show SEO Event",
