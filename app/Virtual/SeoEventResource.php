@@ -5,16 +5,16 @@ namespace App\Virtual;
 /**
  * @OA\Schema(
  *     type="object",
- *     title="Event Resource",
- *     description="Event Resource",
+ *     title="SeoEvent Resource",
+ *     description="SeoEvent Resource",
  * )
  */
-class EventResource
+class SeoEventResource
 {
     /**
      * @OA\Property(
      *     title="id",
-     *     description="ID of event",
+     *     description="ID of SeoEvent",
      *     example=1
      * )
      *
@@ -24,32 +24,42 @@ class EventResource
 
     /**
      * @OA\Property(
-     *     title="user_id",
-     *     description="ID of relateduser",
-     *     example=5,
+     *     title="title",
+     *     description="SeoEvent Title",
+     *     example="SeoEventTitle",
      * )
      *
-     * @var integer
+     * @var string
      */
-    public $user_id;
+    public $title;
+
+    /**
+     * @OA\Property(
+     *     title="description",
+     *     description="SeoEvent Description",
+     *     example="Seo Event Description",
+     * )
+     *
+     * @var string
+     */
+    public $description;
 
     /**
      * @OA\Property(
      *     title="entity_type",
      *     description="Name of related model",
-     *     example="App\\Models\\URL",
+     *     example="url",
      * )
      *
      * @var integer
      */
     public $entity_type;
 
-
     /**
      * @OA\Property(
      *     title="entity_id",
      *     description="ID of related entity",
-     *     example=3,
+     *     example=1,
      * )
      *
      * @var integer
@@ -58,13 +68,14 @@ class EventResource
 
     /**
      * @OA\Property(
-     *     title="data",
-     *     type="array",
-     *     collectionFormat="multi",
-     *     @OA\Items(ref="#/components/schemas/UrlNoRelationsResource")
+     *     title="date",
+     *     description="Date of Seo Event",
+     *     example="2023-12-31",
      * )
+     *
+     * @var string
      */
-    public $data;
+    public $date;
 
     /**
      * @OA\Property(
@@ -90,32 +101,11 @@ class EventResource
 
     /**
      * @OA\Property(
-     *     title="action",
-     *     description="action",
-     *     example="create",
-     * )
-     *
-     * @var string
-     */
-    public $status;
-
-    /**
-     * @OA\Property(
-     *     title="oldData",
-     *     description="oldData",
-     *     example=null,
-     * )
-     *
-     * @var string
-     */
-    public $oldData;
-
-    /**
-     * @OA\Property(
-     *     title="user",
+     *     title="entity",
      *     type="object",
-     *     @OA\Schema (ref="#/components/schemas/UserResource")
+     *     @OA\Schema (ref="#/components/schemas/ProjectResource")
      * )
      */
-    public $user;
+    public $entity;
+
 }

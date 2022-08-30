@@ -7,6 +7,7 @@ use App\Http\Controllers\ImportStrategyController;
 use App\Http\Controllers\KeywordController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SeoEventController;
 use App\Http\Controllers\UrlController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -39,6 +40,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::resource('roles', RoleController::class);
     Route::resource('clients', ClientController::class);
     Route::resource('projects', ProjectController::class);
+    Route::resource('seo_events', SeoEventController::class);
     Route::resource('urls', UrlController::class);
     Route::get('/urls_aggregation', [UrlController::class, 'urlAggregation']);
     Route::resource('keywords', KeywordController::class);

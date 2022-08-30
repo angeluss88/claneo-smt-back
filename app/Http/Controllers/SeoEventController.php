@@ -2,27 +2,30 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\ProjectIndexRequest;
-use App\Http\Requests\ProjectStoreRequest;
-use App\Http\Requests\ProjectUpdateRequest;
-use App\Models\Client;
+use App\Http\Requests\BaseIndexRequest;
+use App\Http\Requests\SeoEventStoreRequest;
+use App\Http\Requests\SeoEventUpdateRequest;
 use App\Models\Project;
+use App\Models\SeoEvent;
+use App\Models\URL;
+use DateTime;
+use Exception;
 use Illuminate\Http\Response;
 
-class ProjectController extends Controller
+class SeoEventController extends Controller
 {
     /**
      * @OA\Get(
-     *     path="/projects?page={page}&count={count}&client_id={client_id}",
-     *     operationId="projects_index",
-     *     tags={"Projects"},
-     *     summary="Projects List",
+     *     path="/seo_events?page={page}&count={count}&title={title}&description={description}&date={date}&project_id={project_id}",
+     *     operationId="seo_events_index",
+     *     tags={"Seo_Events"},
+     *     summary="List of SEO events",
      *     @OA\Response(
      *         response="200",
      *         description="Everything is fine",
      *         @OA\JsonContent(
      *             @OA\Property(
-     *                 property="projects",
+     *                 property="seo_events",
      *                 type="array",
      *                 collectionFormat="multi",
      *                 @OA\Items(
@@ -35,14 +38,14 @@ class ProjectController extends Controller
      *                          property="data",
      *                          type="array",
      *                          collectionFormat="multi",
-     *                          @OA\Items(ref="#/components/schemas/ProjectResource")
+     *                          @OA\Items(ref="#/components/schemas/SeoEventResource")
      *                     )
      *                 ),
      *             ),
      *             @OA\Property(
      *                 property="first_page_url",
      *                 type="string",
-     *                 example="http://127.0.0.1:8000/api/projects?page=1",
+     *                 example="http://127.0.0.1:8000/api/seo_events?page=1",
      *             ),
      *             @OA\Property(
      *                 property="from",
@@ -57,7 +60,7 @@ class ProjectController extends Controller
      *             @OA\Property(
      *                 property="last_page_url",
      *                 type="string",
-     *                 example="http://127.0.0.1:8000/api/projects?page=4",
+     *                 example="http://127.0.0.1:8000/api/seo_events?page=4",
      *             ),
      *             @OA\Property(
      *                 property="links",
@@ -67,23 +70,23 @@ class ProjectController extends Controller
      *                     "label": "&laquo; Previous",
      *                     "active": false
      *                 }, {
-     *                     "url": "http://127.0.0.1:8000/api/projects?page=1",
+     *                     "url": "http://127.0.0.1:8000/api/seo_events?page=1",
      *                     "label": "1",
      *                     "active": true
      *                 }, {
-     *                     "url": "http://127.0.0.1:8000/api/projects?page=2",
+     *                     "url": "http://127.0.0.1:8000/api/seo_events?page=2",
      *                     "label": "2",
      *                     "active": false
      *                 }, {
-     *                     "url": "http://127.0.0.1:8000/api/projects?page=3",
+     *                     "url": "http://127.0.0.1:8000/api/seo_events?page=3",
      *                     "label": "3",
      *                     "active": false
      *                 }, {
-     *                     "url": "http://127.0.0.1:8000/api/projects?page=4",
+     *                     "url": "http://127.0.0.1:8000/api/seo_events?page=4",
      *                     "label": "4",
      *                     "active": false
      *                 }, {
-     *                     "url": "http://127.0.0.1:8000/api/projects?page=2",
+     *                     "url": "http://127.0.0.1:8000/api/seo_events?page=2",
      *                     "label": "Next &raquo;",
      *                     "active": false
      *                 }},
@@ -108,12 +111,12 @@ class ProjectController extends Controller
      *             @OA\Property(
      *                 property="next_page_url",
      *                 type="string",
-     *                 example="http://127.0.0.1:8000/api/projects?page=2",
+     *                 example="http://127.0.0.1:8000/api/seo_events?page=2",
      *             ),
      *             @OA\Property(
      *                 property="path",
      *                 type="string",
-     *                 example="http://127.0.0.1:8000/api/projects",
+     *                 example="http://127.0.0.1:8000/seo_api/events",
      *             ),
      *             @OA\Property(
      *                 property="per_page",
@@ -161,9 +164,39 @@ class ProjectController extends Controller
      *         )
      *     ),
      *     @OA\Parameter(
-     *         name="client_id",
+     *         name="title",
      *         in="path",
-     *         description="Client filter",
+     *         description="Title filter",
+     *         required=false,
+     *         example="title",
+     *         @OA\Schema(
+     *             type="string",
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="description",
+     *         in="path",
+     *         description="Description filter",
+     *         required=false,
+     *         example="description",
+     *         @OA\Schema(
+     *             type="string",
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="date",
+     *         in="path",
+     *         description="Date filter",
+     *         required=false,
+     *         example="2023-12-31",
+     *         @OA\Schema(
+     *             type="string",
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="project_id",
+     *         in="path",
+     *         description="Project filter",
      *         required=false,
      *         example=1,
      *         @OA\Schema(
@@ -175,39 +208,50 @@ class ProjectController extends Controller
      *     },
      * )
      *
-     * @param ProjectIndexRequest $request
+     * @param BaseIndexRequest $request
      * @return Response
      */
-    public function index(ProjectIndexRequest $request): Response
+    public function index(BaseIndexRequest $request): Response
     {
         $count = $request->count == '{count}' ? 10 : $request->count;
+        $seoEvent = SeoEvent::with(['entity']);
 
-        $project = Project::with('client');
+        if($request->title && $request->title !== '{title}') {
+            $seoEvent->where('title', 'LIKE', '%' . $request->title . '%');
+        }
 
-        if ($request->client_id && $request->client_id !== '{client_id}') {
-            $project->where('client_id', (int) $request->client_id);
+        if($request->description && $request->description !== '{description}') {
+            $seoEvent->where('description', 'LIKE', '%' . $request->description . '%');
+        }
+
+        if($request->date && $request->date !== '{date}') {
+            $seoEvent->where('date', $request->date);
+        }
+
+        if($request->project_id && $request->project_id !== '{project_id}') {
+            $seoEvent->where('entity_type', Project::class)->where('entity_id', $request->project_id);
         }
 
         return response([
-            'projects' => $project->paginate($count),
+            'seo_events' => $seoEvent->paginate($count),
         ], 200);
     }
 
     /**
      *
      * @OA\Post (
-     *     path="/projects",
-     *     operationId="projects_store",
-     *     tags={"Projects"},
-     *     summary="Create Project",
+     *     path="/seo_events",
+     *     operationId="seo_events_store",
+     *     tags={"Seo_Events"},
+     *     summary="Create SEO Event",
      *     @OA\Response(
      *         response="201",
      *         description="Everything is fine",
      *         @OA\JsonContent(
      *             @OA\Property(
-     *             property="project",
+     *             property="seo_event",
      *             type="object",
-     *             ref="#/components/schemas/ProjectResource",
+     *             ref="#/components/schemas/SeoEventResource",
      *         ))
      *     ),
      *     @OA\Response(
@@ -220,49 +264,57 @@ class ProjectController extends Controller
      *     ),
      *     @OA\RequestBody(
      *         required=true,
-     *         @OA\JsonContent(ref="#/components/schemas/ProjectRequest")
+     *         @OA\JsonContent(ref="#/components/schemas/SeoEventRequest")
      *     ),
      *     security={
      *       {"bearerAuth": {}},
      *     },
      * )
      *
-     * @param ProjectStoreRequest $request
+     * @param SeoEventStoreRequest $request
      * @return Response
+     * @throws Exception
      */
-    public function store(ProjectStoreRequest $request): Response
+    public function store(SeoEventStoreRequest $request): Response
     {
         $fields = $request->validated();
 
-        $project = Project::create([
-            'domain' => $fields['domain'],
-            'ga_property_id' => $fields['ga_property_id'] ?? '',
-            'ua_property_id' => $fields['ua_property_id'] ?? '',
-            'ua_view_id' => $fields['ua_view_id'] ?? '',
-            'client_id' => $fields['client_id'] ?? Client::where('name', $fields['client'])->firstOrFail()->id,
-            'strategy' => $fields['strategy'] ?? Project::NO_EXPAND_STRATEGY,
-            'expand_gsc' => $fields['expand_gsc'] ?? 0,
-        ]);
+        switch ($fields['entity_type']) {
+            case SeoEvent::URL_TYPE:
+                $fields['entity_type'] = URL::class;
+                break;
+            case SeoEvent::PROJECT_TYPE:
+                $fields['entity_type'] = Project::class;
+                break;
+            default:
+                throw new Exception('unknown type');
+        }
+
+        if(isset($fields['date'])) {
+            $fields['date'] = DateTime::createFromFormat(SeoEvent::DATE_FORMAT, $fields['date'])->format('Y-m-d');
+        }
+
+        $seoEvent = SeoEvent::create($fields);
 
         return response([
-            'project' => $project,
+            'seo_event' => $seoEvent,
         ], 201);
     }
 
     /**
      * @OA\Get(
-     *     path="/projects/{project}",
-     *     operationId="projects_show",
-     *     tags={"Projects"},
-     *     summary="Show Project",
+     *     path="/seo_events/{seoEvent}",
+     *     operationId="seo_events_show",
+     *     tags={"Seo_Events"},
+     *     summary="Show SEO Event",
      *     @OA\Response(
      *         response="200",
      *         description="Everything is fine",
      *         @OA\JsonContent(
      *             @OA\Property(
-     *             property="project",
+     *             property="seo_event",
      *             type="object",
-     *             ref="#/components/schemas/ProjectResource",
+     *             ref="#/components/schemas/SeoEventResource",
      *         )),
      *     ),
      *     @OA\Response(
@@ -274,9 +326,9 @@ class ProjectController extends Controller
      *         description="Error: Not Found",
      *     ),
      *     @OA\Parameter(
-     *         name="project",
+     *         name="seo_event",
      *         in="path",
-     *         description="The project id",
+     *         description="The seo event id",
      *         required=true,
      *         @OA\Schema(
      *             type="integer",
@@ -287,30 +339,30 @@ class ProjectController extends Controller
      *     },
      * )
      *
-     * @param Project $project
+     * @param SeoEvent $seoEvent
      * @return Response
      */
-    public function show(Project $project): Response
+    public function show(SeoEvent $seoEvent): Response
     {
         return response([
-            'project' => Project::with(['seoEvents'])->find($project->id),
+            'seo_event' => SeoEvent::with(['entity'])->find($seoEvent->id),
         ], 200);
     }
 
     /**
      * @OA\Put(
-     *     path="/projects/{project}",
-     *     operationId="projects_update",
-     *     tags={"Projects"},
-     *     summary="Update Project",
+     *     path="/seo_events/{seo_event}",
+     *     operationId="seo_events_update",
+     *     tags={"Seo_Events"},
+     *     summary="Update SEO Event",
      *     @OA\Response(
      *         response="200",
      *         description="Everything is fine",
      *         @OA\JsonContent(
      *             @OA\Property(
-     *             property="project",
+     *             property="seo_event",
      *             type="object",
-     *             ref="#/components/schemas/ProjectResource",
+     *             ref="#/components/schemas/SeoEventResource",
      *         )),
      *     ),
      *     @OA\Response(
@@ -326,9 +378,9 @@ class ProjectController extends Controller
      *         description="The given data was invalid.",
      *     ),
      *     @OA\Parameter(
-     *         name="project",
+     *         name="seo_event",
      *         in="path",
-     *         description="The project id",
+     *         description="The seo event id",
      *         required=true,
      *         @OA\Schema(
      *             type="integer",
@@ -336,39 +388,54 @@ class ProjectController extends Controller
      *     ),
      *     @OA\RequestBody(
      *         required=true,
-     *         @OA\JsonContent(ref="#/components/schemas/ProjectRequest")
+     *         @OA\JsonContent(ref="#/components/schemas/SeoEventRequest")
      *     ),
      *     security={
      *       {"bearerAuth": {}},
      *     },
      * )
      *
-     * @param ProjectUpdateRequest $request
-     * @param Project $project
+     * @param SeoEventUpdateRequest $request
+     * @param SeoEvent $seoEvent
      * @return Response
+     * @throws Exception
      */
-    public function update(ProjectUpdateRequest $request, Project $project): Response
+    public function update(SeoEventUpdateRequest $request, SeoEvent $seoEvent): Response
     {
         $fields = $request->validated();
 
-        $project->fill($fields)->save();
-
-        if (isset($fields['client'])) {
-            $project->client_id = Client::where('name', $fields['client'])->firstOrFail()->id;
+        if(isset($fields['entity_type'])) {
+            switch ($fields['entity_type']) {
+                case SeoEvent::URL_TYPE:
+                    $fields['entity_type'] = URL::class;
+                    break;
+                case SeoEvent::PROJECT_TYPE:
+                    $fields['entity_type'] = Project::class;
+                    break;
+                default:
+                    throw new Exception('unknown type');
+            }
         }
-        $project->save();
+
+        if(isset($fields['date'])) {
+            $fields['date'] = DateTime::createFromFormat(SeoEvent::DATE_FORMAT, $fields['date'])->format('Y-m-d');
+        }
+
+        $seoEvent->fill($fields)->save();
+
+        $seoEvent->save();
 
         return response([
-            'project' => $project,
+            'seo_event' => SeoEvent::with(['entity'])->find($seoEvent->id),
         ], 200);
     }
 
     /**
      * @OA\Delete (
-     *     path="/projects/{project}",
-     *     operationId="projects_delete",
-     *     tags={"Projects"},
-     *     summary="Delete Project",
+     *     path="/seo_events/{seo_event}",
+     *     operationId="seo_events_delete",
+     *     tags={"Seo_Events"},
+     *     summary="Delete SEO Event",
      *     @OA\Response(
      *         response="204",
      *         description="Everything is fine",
@@ -382,9 +449,9 @@ class ProjectController extends Controller
      *         description="Error: Not Found",
      *     ),
      *     @OA\Parameter(
-     *         name="project",
+     *         name="seo_event",
      *         in="path",
-     *         description="The project id",
+     *         description="The seo_event id",
      *         required=true,
      *         @OA\Schema(
      *             type="integer",
@@ -395,12 +462,12 @@ class ProjectController extends Controller
      *     },
      * )
      *
-     * @param Project $project
+     * @param SeoEvent $seoEvent
      * @return Response
      */
-    public function destroy(Project $project): Response
+    public function destroy(SeoEvent $seoEvent): Response
     {
-        $project->delete();
+        $seoEvent->delete();
 
         return response([], 204);
     }

@@ -138,4 +138,9 @@ class URL extends Model
         return $this->hasManyThrough(UrlKeywordData::class, UrlKeyword::class, 'url_id', 'url_keyword_id');
     }
 
+    public function seoEvents(): MorphMany
+    {
+        return $this->morphMany(SeoEvent::class, 'entity');
+    }
+
 }
