@@ -883,7 +883,7 @@ class ImportStrategyController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/timeline_data?import_date={import_date}&project_id={project_id}&metric={metric}",
+     *     path="/timeline_data?import_date={import_date}&project_id={project_id}&metric={metric}&revert_data={revert_data}",
      *     operationId="api_timeline_data",
      *     tags={"Content Strategy"},
      *     summary="CS Timeline Data",
@@ -929,6 +929,16 @@ class ImportStrategyController extends Controller
      *         description="Metric ['ecom_conversion_rate', 'revenue', 'avg_order_value', 'bounce_rate', 'position', 'clicks', 'impressions', 'ctr']",
      *         required=true,
      *         example="clicks",
+     *         @OA\Schema(
+     *             type="string",
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="revert_data",
+     *         in="path",
+     *         description="return negative numbers",
+     *         required=false,
+     *         example="0",
      *         @OA\Schema(
      *             type="string",
      *         )
@@ -992,12 +1002,17 @@ class ImportStrategyController extends Controller
             }
         }
 
-
         foreach ($dateData as $k => $v) {
             $dateData[$k] = (float) $v;
         }
 
         ksort($dateData);
+
+        if($request->revert_data && $request->revert_data == 1) {
+            foreach ($dateData as $k => $v) {
+                $dateData[$k] = $v * -1;
+            }
+        }
 
         return response([
             'timeLineData' => $dateData,
