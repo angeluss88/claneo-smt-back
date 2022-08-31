@@ -1021,7 +1021,7 @@ class ImportStrategyController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/urlDetails?import_date={import_date}&url_id={url_id}&metric={metric}",
+     *     path="/urlDetails?import_date={import_date}&url_id={url_id}&metric={metric}&revert_data={revert_data}",
      *     operationId="urlDetails",
      *     tags={"Content Strategy"},
      *     summary="UrlDetails",
@@ -1067,6 +1067,16 @@ class ImportStrategyController extends Controller
      *         description="Metric ['ecom_conversion_rate', 'revenue', 'avg_order_value', 'bounce_rate', 'position', 'clicks', 'impressions', 'ctr']",
      *         required=true,
      *         example="clicks",
+     *         @OA\Schema(
+     *             type="string",
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="revert_data",
+     *         in="path",
+     *         description="return negative numbers",
+     *         required=false,
+     *         example="0",
      *         @OA\Schema(
      *             type="string",
      *         )
@@ -1125,6 +1135,12 @@ class ImportStrategyController extends Controller
         }
 
         ksort($urlDetails);
+
+        if($request->revert_data && $request->revert_data == 1) {
+            foreach ($urlDetails as $k => $v) {
+                $urlDetails[$k] = $v * -1;
+            }
+        }
 
         return response([
             'urlDetails' => $urlDetails,

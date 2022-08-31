@@ -47,7 +47,7 @@ class SeoEventRequest
     /**
      * @OA\Property(
      *     title="entity_type",
-     *     description="Entity type",
+     *     description="Entity type['project', 'url']",
      *     example="project",
      * )
      *
