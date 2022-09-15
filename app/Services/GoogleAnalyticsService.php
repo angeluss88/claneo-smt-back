@@ -652,6 +652,10 @@ class GoogleAnalyticsService
                                 'query',  // $row->getKeys()[1]
                                 'date'    // $row->getKeys()[2]
                             ],
+                            "dataState" => "all",
+                            "aggregationType" => "byPage",
+                            "rowLimit" => 25000,
+                            "startRow" => 0
                         ] );
 
                         $searchAnalyticsResponse = $serviceWebmasters->searchanalytics->query($site->getSiteUrl(), $postBody);
