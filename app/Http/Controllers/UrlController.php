@@ -239,6 +239,8 @@ class UrlController extends Controller
     public function index(UrlIndexRequest $request): Response
     {
         $count = $request->count == '{count}' ? 10 : $request->count;
+        $customSort = ['keywords_count', 'avgConvRate', 'avgRevenue', 'avgOrderValue', 'avgBounceRate', 'avgSearchVolume',
+            'avgPosition', 'avgClicks', 'avgCtr', 'avgImpressions'];
 
         $url = URL::with(['project', 'events', 'keywords', 'urlData', 'urlKeywordData', 'seoEvents']);
 
@@ -298,7 +300,7 @@ class UrlController extends Controller
         if($request->sort && $request->sort !== '{sort}') {
             $sort = explode('.', $request->sort);
 
-            if(isset($sort[0]) && isset($sort[1]) && in_array($sort[1], ['asc', 'desc'])) {
+            if(isset($sort[0]) && isset($sort[1]) && !in_array($sort[0], $customSort) && in_array($sort[1], ['asc', 'desc'])) {
                 $url->orderBy($sort[0], $sort[1]);
             }
         }
@@ -368,6 +370,15 @@ class UrlController extends Controller
 
             $item->setAttribute('avgSearchVolume', $avgSearchVolume);
             $item->setAttribute('avgTrafficPotential', 'Coming soon...');
+        }
+
+        if ($request->sort ) {
+            $sort = explode('.', $request->sort);
+
+            if(isset($sort[0]) && isset($sort[1]) && in_array($sort[0], $customSort) && in_array($sort[1], ['asc', 'desc'])) {
+                $sortedResult = $url->getCollection()->sortBy($sort[0], SORT_REGULAR, $sort[1] == 'desc')->values();
+                $url->setCollection($sortedResult);
+            }
         }
 
         return response([
