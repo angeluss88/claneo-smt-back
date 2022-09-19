@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Carbon;
 
@@ -96,6 +98,16 @@ class Keyword extends Model
     public function events(): MorphMany
     {
         return $this->morphMany(Event::class, 'entity')->with('user');
+    }
+
+    public function urlKeyword(): HasMany
+    {
+        return $this->hasMany(UrlKeyword::class);
+    }
+
+    public function urlKeywordData(): HasManyThrough
+    {
+        return $this->hasManyThrough(UrlKeywordData::class, UrlKeyword::class);
     }
 
 }

@@ -143,4 +143,9 @@ class URL extends Model
         return $this->morphMany(SeoEvent::class, 'entity');
     }
 
+    public function urlKeyword(): HasMany
+    {
+        return $this->hasMany(UrlKeyword::class, 'url_id');
+    }
+
 }

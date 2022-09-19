@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Support\Carbon;
 
 /**
@@ -55,4 +56,11 @@ class UrlKeywordData extends Model
     {
         return $this->belongsTo(UrlData::class);
     }
+
+    public function keyword(): BelongsTo
+    {
+        return $this->belongsTo(UrlKeyword::class);
+    }
+
+
 }

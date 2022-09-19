@@ -49,6 +49,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/content_strategy_data', [ImportStrategyController::class, 'csStrategy'])->middleware('role:admin,SEO,Researcher');
     Route::get('/timeline_data', [ImportStrategyController::class, 'timelineData'])->middleware('role:admin,SEO,Researcher');
     Route::get('/urlDetails', [ImportStrategyController::class, 'urlDetails'])->middleware('role:admin,SEO,Researcher');
+    Route::get('/urlKeywordDetails', [ImportStrategyController::class, 'urlKeywordDetails'])->middleware('role:admin,SEO,Researcher');
     Route::get('/imports', [ImportStrategyController::class, 'index'])->middleware('role:admin,SEO');
     Route::get('/imports/{import}', [ImportStrategyController::class, 'show'])->middleware('role:admin,SEO');
     Route::get('/expandGA/{import}', [ImportStrategyController::class, 'expandGA'])->middleware('role:admin,SEO');

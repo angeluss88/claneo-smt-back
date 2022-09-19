@@ -6,6 +6,7 @@ use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -39,4 +40,9 @@ class UrlKeyword extends Model
     use HasFactory;
 
     public $table = 'url_keyword';
+
+    public function urlKeywordData(): HasMany
+    {
+        return $this->hasMany(UrlKeywordData::class);
+    }
 }

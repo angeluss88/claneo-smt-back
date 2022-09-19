@@ -6,10 +6,12 @@ use App\Http\Requests\ContentStrategyRequest;
 use App\Http\Requests\ImportStrategyRequest;
 use App\Http\Requests\TimeLineDataRequest;
 use App\Http\Requests\UrlDetailsRequest;
+use App\Http\Requests\UrlKeywordDetailsRequest;
 use App\Models\Import;
 use App\Models\Keyword;
 use App\Models\Project;
 use App\Models\URL;
+use App\Models\UrlKeywordData;
 use App\Services\GoogleAnalyticsService;
 use Auth;
 use Carbon\Carbon;
@@ -25,6 +27,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Throwable;
 use Validator;
 use DateTime;
+use \Illuminate\Support\Facades\URL as UrlFacade;
 
 class ImportStrategyController extends Controller
 {
@@ -1144,6 +1147,169 @@ class ImportStrategyController extends Controller
 
         return response([
             'urlDetails' => $urlDetails,
+        ], 200);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/urlKeywordDetails?import_date={import_date}&url_id={url_id}&page={page}&count={count}",
+     *     operationId="UrlKeywordDetails",
+     *     tags={"Content Strategy"},
+     *     summary="UrlKeywordDetails",
+     *     @OA\Response(
+     *         response="200",
+     *         description="Everything is fine",
+     *         @OA\JsonContent(
+     *             @OA\Property(
+     *                 property="urlDetails",
+     *                 type="array",
+     *                 collectionFormat="multi",
+     *                 @OA\Items(ref="#/components/schemas/TimelineData"),
+     *             ),
+     *         ),
+     *     ),
+     *     @OA\Response(
+     *         response="401",
+     *         description="Unauthenticated",
+     *     ),
+     *     @OA\Parameter(
+     *         name="import_date",
+     *         in="path",
+     *         description="Import date range (Y.m.d-Y.m.d)",
+     *         required=false,
+     *         example="2021.11.03-2021.12.03",
+     *         @OA\Schema(
+     *             type="string",
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="url_id",
+     *         in="path",
+     *         description="Url ID",
+     *         required=true,
+     *         example=1,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="page",
+     *         in="path",
+     *         description="The page",
+     *         required=false,
+     *         example=1,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="count",
+     *         in="path",
+     *         description="Count of rows",
+     *         required=false,
+     *         example=10,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
+     *     security={
+     *       {"bearerAuth": {}},
+     *     },
+     * )
+     *
+     * @param UrlKeywordDetailsRequest $request
+     * @return Response
+     * @throws Exception
+     */
+    public function urlKeywordDetails (UrlKeywordDetailsRequest $request): Response
+    {
+        $url = URL::findOrFail($request->url_id)->with('keywords');
+
+        if ($request->import_date) {
+            $url = $this->filterTimeLineByImportData($request->import_date, GoogleAnalyticsService::GSC_METRICS[0], $url);
+        }
+
+        $url = $url->first();
+
+        $keywords = [];
+        $page = !isset($request->page) || $request->page == '{page}' || $request->page < 1 ? 1 : (int) $request->page;
+        $count = !isset($request->count) || $request->count == '{count}' || $request->count < 1 ? 10 : (int) $request->count;
+
+        foreach ($url->keywords as $i => $keyword) {
+            if($i >= $page * $count) {
+                break;
+            }
+            if ($i < ($page-1) * $count) {
+                continue;
+            }
+
+            $position = 0;
+            $clicks = 0;
+            $impressions = 0;
+            $ctr = 0;
+
+            foreach ($keyword->urlKeywordData as $ukw) {
+                $position += $ukw->position;
+                $clicks += $ukw->clicks;
+                $impressions += $ukw->impressions;
+                $ctr += $ukw->ctr;
+            }
+
+            $keyword->totalPosition = $position;
+            $keyword->totalClicks = $clicks;
+            $keyword->totalImpressions = $impressions;
+            $keyword->totalCtr = $ctr;
+
+            $keywords[$keyword->id] = $keyword;
+        }
+
+        // @TODO look for better pagination solution
+        $totalPages = ceil($url->keywords()->count() / $count);
+        $nextPage = $page + 1;
+        $nextPageUrl = UrlFacade::current() . "?page=" . $nextPage;
+        $prevPage = $page - 1;
+        $prevPageUrl = UrlFacade::current() . "?page=" . $prevPage;
+
+        $links = [
+            [
+                'url' => $prevPage > 0 ? $prevPageUrl : null,
+                'label' => "&laquo; Previous",
+                'active' => $page == 1,
+            ]
+        ];
+
+        for($i = 1; $i <= $totalPages; $i++) {
+            $links[] = [
+                'url' => UrlFacade::current() . "?page=" . $i,
+                'label' => "$i",
+                'active' => $page == $i,
+            ];
+        }
+
+        $links[] = [
+            [
+                'url' => $totalPages > $page ? $nextPageUrl : null,
+                'label' => "Next &raquo;",
+                'active' => $page == $totalPages,
+            ]
+        ];
+
+        return response([
+            'keywords' => [
+                'current_page' => $page,
+                'data' => $keywords,
+                "first_page_url" => UrlFacade::current() . "?page=1",
+                "from" => 1,
+                "last_page"=> $totalPages,
+                "last_page_url" => UrlFacade::current() . "?page=" . $totalPages,
+                "links" => $links,
+                "next_page_url" => $totalPages > $page ? $nextPageUrl : null,
+                "path" => UrlFacade::current(),
+                "per_page" => $count,
+                "prev_page_url" => $prevPage > 0 ? $prevPageUrl : null,
+                "to" => $totalPages,
+                "total" => $url->keywords()->count()
+            ],
         ], 200);
     }
 
