@@ -1297,7 +1297,7 @@ class ImportStrategyController extends Controller
         return response([
             'keywords' => [
                 'current_page' => $page,
-                'data' => $keywords,
+                'data' => array_values($keywords),
                 "first_page_url" => UrlFacade::current() . "?page=1",
                 "from" => 1,
                 "last_page"=> $totalPages,
