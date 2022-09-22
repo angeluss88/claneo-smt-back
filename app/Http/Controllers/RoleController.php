@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\RoleStoreRequest;
 use App\Http\Requests\RoleUpdateRequest;
+use App\Models\Event;
 use App\Models\Role;
 use Illuminate\Http\Response;
 
@@ -88,6 +89,15 @@ class RoleController extends Controller
         $fields = $request->validated();
 
         $role = Role::create($fields);
+
+        Event::create([
+            'user_id' => \Auth::user()->id,
+            'entity_type' => Role::class,
+            'entity_id' => $role->id,
+            'action' => Event::CREATE_ACTION,
+            'data' =>  $fields,
+            'oldData' => [],
+        ]);
 
         return response([
             'role' => $role
@@ -195,8 +205,18 @@ class RoleController extends Controller
     public function update(RoleUpdateRequest $request, Role $role): Response
     {
         $fields = $request->validated();
+        $oldData = $role->getOriginal();
 
         $role->fill($fields)->save();
+
+        Event::create([
+            'user_id' => \Auth::user()->id,
+            'entity_type' => Role::class,
+            'entity_id' => $role->id,
+            'action' => Event::UPDATE_ACTION,
+            'data' =>  $request->validated(),
+            'oldData' => $oldData,
+        ]);
 
         return response([
             'role' => $role,
@@ -240,8 +260,18 @@ class RoleController extends Controller
      */
     public function destroy(Role $role): Response
     {
-        if($role->id > 4) // admin, Seo, Researcher and Client couldn't be deleted
+        if($role->id > 4) { // admin, Seo, Researcher and Client couldn't be deleted
             $role->delete();
+
+            Event::create([
+                'user_id' => \Auth::user()->id,
+                'entity_type' => Role::class,
+                'entity_id' => $role->id,
+                'action' => Event::DELETE_ACTION,
+                'data' =>  [],
+                'oldData' => [],
+            ]);
+        }
 
         return response([], 204);
     }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\BaseIndexRequest;
 use App\Http\Requests\UserUpdateRequest;
 use App\Models\Client;
+use App\Models\Event;
 use App\Models\User;
 use Illuminate\Http\Response;
 
@@ -289,7 +290,17 @@ class UserController extends Controller
             unset($fields['client_id']);
         }
 
+        $oldData = $user->getOriginal();
         $user->fill($fields)->save();
+
+        Event::create([
+            'user_id' => \Auth::user()->id,
+            'entity_type' => User::class,
+            'entity_id' => $user->id,
+            'action' => Event::UPDATE_ACTION,
+            'data' =>  $request->validated(),
+            'oldData' => $oldData,
+        ]);
 
         return response([
             'user' => User::with('roles', 'client', 'projects')->find($user->id),
@@ -337,6 +348,15 @@ class UserController extends Controller
             return response(['message' => "can't delete super admin"], 404);
         }
         $user->delete();
+
+        Event::create([
+            'user_id' => \Auth::user()->id,
+            'entity_type' => User::class,
+            'entity_id' => $user->id,
+            'action' => Event::DELETE_ACTION,
+            'data' =>  [],
+            'oldData' => [],
+        ]);
 
         return response([], 204);
     }

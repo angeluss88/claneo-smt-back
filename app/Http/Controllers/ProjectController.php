@@ -6,6 +6,7 @@ use App\Http\Requests\ProjectIndexRequest;
 use App\Http\Requests\ProjectStoreRequest;
 use App\Http\Requests\ProjectUpdateRequest;
 use App\Models\Client;
+use App\Models\Event;
 use App\Models\Project;
 use Illuminate\Http\Response;
 
@@ -244,6 +245,15 @@ class ProjectController extends Controller
             'expand_gsc' => $fields['expand_gsc'] ?? 0,
         ]);
 
+        Event::create([
+            'user_id' => \Auth::user()->id,
+            'entity_type' => Project::class,
+            'entity_id' => $project->id,
+            'action' => Event::CREATE_ACTION,
+            'data' =>  $fields,
+            'oldData' => [],
+        ]);
+
         return response([
             'project' => $project,
         ], 201);
@@ -356,7 +366,18 @@ class ProjectController extends Controller
         if (isset($fields['client'])) {
             $project->client_id = Client::where('name', $fields['client'])->firstOrFail()->id;
         }
+        $oldData = $project->getOriginal();
+
         $project->save();
+
+        Event::create([
+            'user_id' => \Auth::user()->id,
+            'entity_type' => Project::class,
+            'entity_id' => $project->id,
+            'action' => Event::UPDATE_ACTION,
+            'data' =>  $request->validated(),
+            'oldData' => $oldData,
+        ]);
 
         return response([
             'project' => $project,
@@ -401,6 +422,15 @@ class ProjectController extends Controller
     public function destroy(Project $project): Response
     {
         $project->delete();
+
+        Event::create([
+            'user_id' => \Auth::user()->id,
+            'entity_type' => Project::class,
+            'entity_id' => $project->id,
+            'action' => Event::DELETE_ACTION,
+            'data' =>  [],
+            'oldData' => [],
+        ]);
 
         return response([], 204);
     }

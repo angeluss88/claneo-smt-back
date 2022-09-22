@@ -8,6 +8,7 @@ use App\Services\GoogleAnalyticsService;
 use Carbon\Carbon;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
+use Illuminate\Support\Facades\DB;
 
 class Kernel extends ConsoleKernel
 {
@@ -29,6 +30,9 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         $schedule->command('sanctum:prune-expired --hours=24')->daily();
+        $schedule->call(function () {
+            DB::table('events')->whereDate('created_at', '<=', now()->subDays(90))->delete();
+        })->monthly();
 
         $schedule->call(function () {
             $filepath = storage_path('test.txt');

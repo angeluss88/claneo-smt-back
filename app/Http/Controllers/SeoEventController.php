@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\BaseIndexRequest;
 use App\Http\Requests\SeoEventStoreRequest;
 use App\Http\Requests\SeoEventUpdateRequest;
+use App\Models\Client;
+use App\Models\Event;
 use App\Models\Project;
 use App\Models\SeoEvent;
 use App\Models\URL;
@@ -322,6 +324,15 @@ class SeoEventController extends Controller
 
         $seoEvent = SeoEvent::create($fields);
 
+        Event::create([
+            'user_id' => \Auth::user()->id,
+            'entity_type' => SeoEvent::class,
+            'entity_id' => $seoEvent->id,
+            'action' => Event::CREATE_ACTION,
+            'data' =>  $fields,
+            'oldData' => [],
+        ]);
+
         return response([
             'seo_event' => $seoEvent,
         ], 201);
@@ -447,9 +458,18 @@ class SeoEventController extends Controller
             $fields['date'] = DateTime::createFromFormat(SeoEvent::DATE_FORMAT, $fields['date'])->format('Y-m-d');
         }
 
+        $oldData = $seoEvent->getOriginal();
+
         $seoEvent->fill($fields)->save();
 
-        $seoEvent->save();
+        Event::create([
+            'user_id' => \Auth::user()->id,
+            'entity_type' => SeoEvent::class,
+            'entity_id' => $seoEvent->id,
+            'action' => Event::UPDATE_ACTION,
+            'data' =>  $request->validated(),
+            'oldData' => $oldData,
+        ]);
 
         return response([
             'seo_event' => SeoEvent::with(['entity'])->find($seoEvent->id),
@@ -494,6 +514,15 @@ class SeoEventController extends Controller
     public function destroy(SeoEvent $seoEvent): Response
     {
         $seoEvent->delete();
+
+        Event::create([
+            'user_id' => \Auth::user()->id,
+            'entity_type' => SeoEvent::class,
+            'entity_id' => $seoEvent->id,
+            'action' => Event::DELETE_ACTION,
+            'data' =>  [],
+            'oldData' => [],
+        ]);
 
         return response([], 204);
     }

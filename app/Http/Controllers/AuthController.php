@@ -9,6 +9,7 @@ use App\Mail\ForgotPasswordLinkMail;
 use App\Mail\SetPasswordLinkMail;
 use App\Models\Client;
 use App\Http\Requests\ForgotPasswordRequest;
+use App\Models\Event;
 use Carbon\Carbon;
 use DB;
 use Illuminate\Http\JsonResponse;
@@ -107,11 +108,18 @@ class AuthController extends Controller
 
         Mail::to($user['email'])->send(new SetPasswordLinkMail($details));
 
-        $response = [
-            'user' => $user,
-        ];
+        Event::create([
+            'user_id' => \Auth::user()->id,
+            'entity_type' => User::class,
+            'entity_id' => $user->id,
+            'action' => Event::CREATE_ACTION,
+            'data' =>  $request->validated(),
+            'oldData' => [],
+        ]);
 
-        return response($response, 201);
+        return response([
+            'user' => $user,
+        ], 201);
     }
 
     /**

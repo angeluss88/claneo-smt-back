@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\AccountEditRequest;
+use App\Models\Event;
+use App\Models\URL;
 use App\Models\User;
+use Auth;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 
@@ -60,7 +63,17 @@ class AccountController extends Controller
             $user->client_id = null;
         }
 
+        $oldAttributes = $user->getOriginal();
         $user->fill($fields)->save();
+
+        Event::create([
+            'user_id' => Auth::user()->id,
+            'entity_type' => User::class,
+            'entity_id' => $user->id,
+            'action' => Event::UPDATE_ACTION,
+            'data' =>  $fields,
+            'oldData' => $oldAttributes,
+        ]);
 
         return response([
             'user' => User::with(['roles', 'client', 'projects',])->find(auth()->id()),

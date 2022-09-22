@@ -6,6 +6,7 @@ use App\Http\Requests\BaseIndexRequest;
 use App\Http\Requests\ClientStoreRequest;
 use App\Http\Requests\ClientUpdateRequest;
 use App\Models\Client;
+use App\Models\Event;
 use Illuminate\Http\Response;
 
 class ClientController extends Controller
@@ -214,8 +215,19 @@ class ClientController extends Controller
      */
     public function store(ClientStoreRequest $request): Response
     {
+        $client = Client::create($request->validated());
+
+        Event::create([
+            'user_id' => \Auth::user()->id,
+            'entity_type' => Client::class,
+            'entity_id' => $client->id,
+            'action' => Event::CREATE_ACTION,
+            'data' =>  $request->validated(),
+            'oldData' => [],
+        ]);
+
         return response([
-            'client' => Client::create($request->validated()),
+            'client' => $client,
         ], 201);
     }
 
@@ -319,7 +331,17 @@ class ClientController extends Controller
      */
     public function update(ClientUpdateRequest $request, Client $client): Response
     {
+        $oldData = $client->getOriginal();
         $client->fill($request->validated())->save();
+
+        Event::create([
+            'user_id' => \Auth::user()->id,
+            'entity_type' => Client::class,
+            'entity_id' => $client->id,
+            'action' => Event::UPDATE_ACTION,
+            'data' =>  $request->validated(),
+            'oldData' => $oldData,
+        ]);
 
         return response([
             'client' => $client,
@@ -364,6 +386,15 @@ class ClientController extends Controller
     public function destroy(Client $client): Response
     {
         $client->delete();
+
+        Event::create([
+            'user_id' => \Auth::user()->id,
+            'entity_type' => Client::class,
+            'entity_id' => $client->id,
+            'action' => Event::DELETE_ACTION,
+            'data' =>  [],
+            'oldData' => [],
+        ]);
 
         return response([], 204);
     }
