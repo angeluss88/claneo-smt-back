@@ -1095,7 +1095,8 @@ class ImportStrategyController extends Controller
      */
     public function urlDetails (UrlDetailsRequest $request): Response
     {
-        $url = URL::findOrFail($request->url_id)->with('keywords');
+        $url = URL::with('keywords')->whereId($request->url_id);
+
         $urlDetails = [];
 
         if ($request->import_date) {

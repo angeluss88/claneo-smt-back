@@ -438,9 +438,9 @@ class ImportStrategyControllerTest extends TestCase
 
         $response
             ->assertJson(function (AssertableJson $json) {
-                return $json->has('message')->missing('urlDetails');
+                return $json->has('status')->has('message')->missing('urlDetails');
             })
-            ->assertStatus(404);
+            ->assertStatus(500);
 
     }
 
