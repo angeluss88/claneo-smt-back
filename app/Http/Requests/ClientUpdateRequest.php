@@ -3,13 +3,12 @@
 namespace App\Http\Requests;
 
 use App\Models\Client;
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
  * @property Client|null $client
  */
-class ClientUpdateRequest extends FormRequest
+class ClientUpdateRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.

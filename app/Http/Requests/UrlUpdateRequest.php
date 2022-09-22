@@ -3,11 +3,9 @@
 namespace App\Http\Requests;
 
 use Exception;
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use function PHPUnit\Framework\exactly;
 
-class UrlUpdateRequest extends FormRequest
+class UrlUpdateRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.

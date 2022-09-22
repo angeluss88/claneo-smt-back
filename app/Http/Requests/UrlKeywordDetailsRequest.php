@@ -2,15 +2,11 @@
 
 namespace App\Http\Requests;
 
-use App\Services\GoogleAnalyticsService;
-use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
-
 /**
  * @property int $url_id
  * @property string|null $import_date
  */
-class UrlKeywordDetailsRequest extends FormRequest
+class UrlKeywordDetailsRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.

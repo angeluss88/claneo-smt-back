@@ -2,8 +2,6 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-
 /**
  * @property int|null $count
  * @property int|null $page
@@ -13,7 +11,7 @@ use Illuminate\Foundation\Http\FormRequest;
  * @property string|null $url
  * @property string|null $keyword
  */
-class ContentStrategyRequest extends FormRequest
+class ContentStrategyRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.

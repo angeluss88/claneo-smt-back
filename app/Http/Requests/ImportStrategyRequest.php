@@ -2,14 +2,12 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-
 /**
  * @property int|null $count
  * @property int|null $project_id
  * @property string|null $import_date
  */
-class ImportStrategyRequest extends FormRequest
+class ImportStrategyRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.

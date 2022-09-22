@@ -3,13 +3,12 @@
 namespace App\Http\Requests;
 
 use App\Models\Keyword;
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
  * @property Keyword $keyword
  */
-class KeywordUpdateRequest extends FormRequest
+class KeywordUpdateRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.

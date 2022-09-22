@@ -2,11 +2,10 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 
-class KeywordStoreRequest extends FormRequest
+class KeywordStoreRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.

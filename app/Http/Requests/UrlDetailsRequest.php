@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use App\Services\GoogleAnalyticsService;
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
@@ -11,7 +10,7 @@ use Illuminate\Validation\Rule;
  * @property string|null $import_date
  * @property string $metric
  */
-class UrlDetailsRequest extends FormRequest
+class UrlDetailsRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.

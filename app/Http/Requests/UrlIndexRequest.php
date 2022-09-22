@@ -2,8 +2,6 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-
 /**
  * @property int|null $count
  * @property int|null $page
@@ -14,7 +12,7 @@ use Illuminate\Foundation\Http\FormRequest;
  * @property string|null $import_date
  * @property string|null $sort
  */
-class UrlIndexRequest extends FormRequest
+class UrlIndexRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.

@@ -2,13 +2,11 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-
 /**
  * @property int|null $project_id
  * @property string|null $date_range
  */
-class UrlAggregationRequest extends FormRequest
+class UrlAggregationRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.

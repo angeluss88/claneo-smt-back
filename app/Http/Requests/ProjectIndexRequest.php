@@ -2,14 +2,12 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-
 /**
  * @property int $count
  * @property int $page
  * @property int|null $client_id
  */
-class ProjectIndexRequest extends FormRequest
+class ProjectIndexRequest extends BaseRequest
 {
     /**
      * Determine if the user is authorized to make this request.
