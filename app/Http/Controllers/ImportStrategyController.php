@@ -1161,12 +1161,119 @@ class ImportStrategyController extends Controller
      *         description="Everything is fine",
      *         @OA\JsonContent(
      *             @OA\Property(
-     *                 property="urlDetails",
+     *                 property="keywords",
      *                 type="array",
      *                 collectionFormat="multi",
-     *                 @OA\Items(ref="#/components/schemas/TimelineData"),
+     *                 @OA\Items(
+     *                     @OA\Property(
+     *                          property="current_page",
+     *                          type="integer",
+     *                          example=1,
+     *                     ),
+     *                     @OA\Property(
+     *                          property="data",
+     *                          type="array",
+     *                          collectionFormat="multi",
+     *                          @OA\Items(ref="#/components/schemas/UrlKeywordDetailsResource")
+     *                     )
+     *                 ),
      *             ),
-     *         ),
+     *             @OA\Property(
+     *                 property="first_page_url",
+     *                 type="string",
+     *                 example="http://127.0.0.1:8000/api/urlKeywordDetails?page=1",
+     *             ),
+     *             @OA\Property(
+     *                 property="from",
+     *                 type="integer",
+     *                 example=1,
+     *             ),
+     *             @OA\Property(
+     *                 property="last_page",
+     *                 type="integer",
+     *                 example=4,
+     *             ),
+     *             @OA\Property(
+     *                 property="last_page_url",
+     *                 type="string",
+     *                 example="http://127.0.0.1:8000/api/urlKeywordDetails?page=4",
+     *             ),
+     *             @OA\Property(
+     *                 property="links",
+     *                 type="array",
+     *                 example={{
+     *                     "url": null,
+     *                     "label": "&laquo; Previous",
+     *                     "active": false
+     *                 }, {
+     *                     "url": "http://127.0.0.1:8000/api/urlKeywordDetails?page=1",
+     *                     "label": "1",
+     *                     "active": true
+     *                 }, {
+     *                     "url": "http://127.0.0.1:8000/api/urlKeywordDetails?page=2",
+     *                     "label": "2",
+     *                     "active": false
+     *                 }, {
+     *                     "url": "http://127.0.0.1:8000/api/urlKeywordDetails?page=3",
+     *                     "label": "3",
+     *                     "active": false
+     *                 }, {
+     *                     "url": "http://127.0.0.1:8000/api/urlKeywordDetails?page=4",
+     *                     "label": "4",
+     *                     "active": false
+     *                 }, {
+     *                     "url": "http://127.0.0.1:8000/api/urlKeywordDetails?page=2",
+     *                     "label": "Next &raquo;",
+     *                     "active": false
+     *                 }},
+     *                 @OA\Items(
+     *                     @OA\Property(
+     *                         property="url",
+     *                         type="string",
+     *                         example=""
+     *                      ),
+     *                      @OA\Property(
+     *                         property="label",
+     *                         type="string",
+     *                         example=""
+     *                      ),
+     *                      @OA\Property(
+     *                         property="active",
+     *                         type="boolean",
+     *                         example=""
+     *                      ),
+     *                 )
+     *             ),
+     *             @OA\Property(
+     *                 property="next_page_url",
+     *                 type="string",
+     *                 example="http://127.0.0.1:8000/api/urlKeywordDetails?page=2",
+     *             ),
+     *             @OA\Property(
+     *                 property="path",
+     *                 type="string",
+     *                 example="http://127.0.0.1:8000/urlKeywordDetails",
+     *             ),
+     *             @OA\Property(
+     *                 property="per_page",
+     *                 type="integer",
+     *                 example=1,
+     *             ),
+     *             @OA\Property(
+     *                 property="prev_page_url",
+     *                 type="string",
+     *                 example=null,
+     *             ),
+     *             @OA\Property(
+     *                 property="to",
+     *                 type="integer",
+     *                 example=1,
+     *             ),
+     *             @OA\Property(
+     *                 property="total",
+     *                 type="integer",
+     *                 example=4,
+     *         )),
      *     ),
      *     @OA\Response(
      *         response="401",
