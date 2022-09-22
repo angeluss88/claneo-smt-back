@@ -1331,7 +1331,7 @@ class ImportStrategyController extends Controller
      */
     public function urlKeywordDetails (UrlKeywordDetailsRequest $request): Response
     {
-        $url = URL::findOrFail($request->url_id)->with('keywords'); //URL::with('keywords')->whereId($request->url_id);
+        $url = URL::with('keywords')->whereId($request->url_id);
 
         if ($request->import_date) {
             $url = $this->filterTimeLineByImportData($request->import_date, GoogleAnalyticsService::GSC_METRICS[0], $url);
