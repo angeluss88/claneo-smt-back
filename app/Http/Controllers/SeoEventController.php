@@ -8,6 +8,7 @@ use App\Http\Requests\SeoEventUpdateRequest;
 use App\Models\Project;
 use App\Models\SeoEvent;
 use App\Models\URL;
+use Carbon\Carbon;
 use DateTime;
 use Exception;
 use Illuminate\Http\Response;
@@ -16,7 +17,7 @@ class SeoEventController extends Controller
 {
     /**
      * @OA\Get(
-     *     path="/seo_events?page={page}&count={count}&title={title}&description={description}&date={date}&project_id={project_id}",
+     *     path="/seo_events?page={page}&count={count}&title={title}&description={description}&search={search}&date={date}&project_id={project_id}",
      *     operationId="seo_events_index",
      *     tags={"Seo_Events"},
      *     summary="List of SEO events",
@@ -184,11 +185,21 @@ class SeoEventController extends Controller
      *         )
      *     ),
      *     @OA\Parameter(
+     *         name="search",
+     *         in="path",
+     *         description="Search by title or description",
+     *         required=false,
+     *         example="search",
+     *         @OA\Schema(
+     *             type="string",
+     *         )
+     *     ),
+     *     @OA\Parameter(
      *         name="date",
      *         in="path",
-     *         description="Date filter",
+     *         description="Date range filter (Y.m.d-Y.m.d)",
      *         required=false,
-     *         example="2023-12-31",
+     *         example="2021.11.03-2021.12.03",
      *         @OA\Schema(
      *             type="string",
      *         )
@@ -216,6 +227,11 @@ class SeoEventController extends Controller
         $count = $request->count == '{count}' ? 10 : $request->count;
         $seoEvent = SeoEvent::with(['entity']);
 
+        if($request->search && $request->search !== '{search}') {
+            $seoEvent->where('title', 'LIKE', '%' . $request->search . '%');
+            $seoEvent->orWhere('description', 'LIKE', '%' . $request->search . '%');
+        }
+
         if($request->title && $request->title !== '{title}') {
             $seoEvent->where('title', 'LIKE', '%' . $request->title . '%');
         }
@@ -224,13 +240,23 @@ class SeoEventController extends Controller
             $seoEvent->where('description', 'LIKE', '%' . $request->description . '%');
         }
 
-        if($request->date && $request->date !== '{date}') {
-            $seoEvent->where('date', $request->date);
+        if ($request->date && $request->date !== '{date}') {
+            $dates = explode('-', $request->date);
+            if(count($dates) == 2) {
+                $from = Carbon::createFromFormat('Y.m.d', $dates[0])->subDay();
+                $to = Carbon::createFromFormat('Y.m.d', $dates[1]);
+
+                if($from && $to) {
+                    $seoEvent->whereBetween('date', [$from, $to]);
+                }
+            }
         }
 
         if($request->project_id && $request->project_id !== '{project_id}') {
             $seoEvent->where('entity_type', Project::class)->where('entity_id', $request->project_id);
         }
+
+        $seoEvent->orderBy('date', 'asc');
 
         return response([
             'seo_events' => $seoEvent->paginate($count),

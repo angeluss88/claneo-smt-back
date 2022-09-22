@@ -51,6 +51,12 @@ class SeoEvent extends Model
         'date',
     ];
 
+    protected $dates = [
+        'created_at',
+        'updated_at',
+        'date',
+    ];
+
     public function entity(): MorphTo
     {
         return $this->morphTo();
