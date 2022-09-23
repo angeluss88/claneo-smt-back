@@ -1153,7 +1153,7 @@ class ImportStrategyController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/urlKeywordDetails?import_date={import_date}&url_id={url_id}&page={page}&count={count}",
+     *     path="/urlKeywordDetails?import_date={import_date}&url_id={url_id}&page={page}&count={count}&sort={sort}",
      *     operationId="UrlKeywordDetails",
      *     tags={"Content Strategy"},
      *     summary="UrlKeywordDetails",
@@ -1320,6 +1320,16 @@ class ImportStrategyController extends Controller
      *             type="integer",
      *         )
      *     ),
+     *     @OA\Parameter(
+     *         name="sort",
+     *         in="path",
+     *         description="Sort by field. Format: 'field.direction'. Direction must be asc or desc",
+     *         required=false,
+     *         example="url.desc",
+     *         @OA\Schema(
+     *             type="string",
+     *         )
+     *     ),
      *     security={
      *       {"bearerAuth": {}},
      *     },
@@ -1331,9 +1341,16 @@ class ImportStrategyController extends Controller
      */
     public function urlKeywordDetails (UrlKeywordDetailsRequest $request): Response
     {
+        $sorting = [
+            'position' => 'totalPosition',
+            'clicks' => 'totalClicks',
+            'impressions' => 'totalImpressions',
+            'ctr' => 'totalCtr',
+        ];
+
         $url = URL::with('keywords')->whereId($request->url_id);
 
-        if ($request->import_date) {
+        if ($request->import_date && $request->import_date !== '{import_date}') {
             $url = $this->filterTimeLineByImportData($request->import_date, GoogleAnalyticsService::GSC_METRICS[0], $url);
         }
 
@@ -1342,6 +1359,7 @@ class ImportStrategyController extends Controller
         $keywords = [];
         $page = !isset($request->page) || $request->page == '{page}' || $request->page < 1 ? 1 : (int) $request->page;
         $count = !isset($request->count) || $request->count == '{count}' || $request->count < 1 ? 10 : (int) $request->count;
+
 
         foreach ($url->keywords as $i => $keyword) {
             if($i >= $page * $count) {
@@ -1369,6 +1387,19 @@ class ImportStrategyController extends Controller
             $keyword->totalCtr = $ctr;
 
             $keywords[$keyword->id] = $keyword;
+        }
+        $keywords = collect($keywords);
+
+        if($request->sort && $request->sort !== '{sort}') {
+            $sort = explode('.', $request->sort);
+            if(isset($sort[0])){
+                if(isset($sorting[$sort[0]])) {
+                    $sort[0] = $sorting[$sort[0]];
+                }
+                $direction = $sort[1] ?? 'asc';
+
+                $keywords = $keywords->sortBy($sort[0], SORT_REGULAR, $direction == 'desc');
+            }
         }
 
         // @TODO look for better pagination solution
@@ -1405,7 +1436,7 @@ class ImportStrategyController extends Controller
         return response([
             'keywords' => [
                 'current_page' => $page,
-                'data' => array_values($keywords),
+                'data' => $keywords->values(),
                 "first_page_url" => UrlFacade::current() . "?page=1",
                 "from" => 1,
                 "last_page"=> $totalPages,
