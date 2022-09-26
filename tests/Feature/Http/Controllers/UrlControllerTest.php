@@ -280,10 +280,10 @@ class UrlControllerTest extends TestCase
             ->assertJson(function (AssertableJson $json) {
                 return $json
                     ->has('data')
-                    ->has('data.avgConvRate')
-                    ->has('data.avgRevenue')
-                    ->has('data.avgOrderValue')
-                    ->has('data.avgBounceRate')
+                    ->has('data.aggrConvRate')
+                    ->has('data.aggrRevenue')
+                    ->has('data.aggrOrderValue')
+                    ->has('data.aggrBounceRate')
                     ->has('data.aggrPosition')
                     ->has('data.aggrClicks')
                     ->has('data.aggrImpressions')
