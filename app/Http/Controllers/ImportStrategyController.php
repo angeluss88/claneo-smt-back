@@ -11,7 +11,6 @@ use App\Models\Import;
 use App\Models\Keyword;
 use App\Models\Project;
 use App\Models\URL;
-use App\Models\UrlKeywordData;
 use App\Services\GoogleAnalyticsService;
 use Auth;
 use Carbon\Carbon;
@@ -27,7 +26,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Throwable;
 use Validator;
 use DateTime;
-use \Illuminate\Support\Facades\URL as UrlFacade;
+use Illuminate\Support\Facades\URL as UrlFacade;
 
 class ImportStrategyController extends Controller
 {
@@ -1011,11 +1010,19 @@ class ImportStrategyController extends Controller
 
         ksort($dateData);
 
-        if($request->revert_data && $request->revert_data == 1) {
+        if($request->revert_data == 1) {
             foreach ($dateData as $k => $v) {
                 $dateData[$k] = $v * -1;
             }
         }
+
+//        $result = [];
+//        foreach ($dateData as $date => $value) {
+//            $result[] = [
+//                'date' => $date,
+//                "$metric" => $value,
+//            ];
+//        }
 
         return response([
             'timeLineData' => $dateData,
@@ -1140,7 +1147,7 @@ class ImportStrategyController extends Controller
 
         ksort($urlDetails);
 
-        if($request->revert_data && $request->revert_data == 1) {
+        if($request->revert_data == 1) {
             foreach ($urlDetails as $k => $v) {
                 $urlDetails[$k] = $v * -1;
             }
@@ -1360,7 +1367,6 @@ class ImportStrategyController extends Controller
         $page = !isset($request->page) || $request->page == '{page}' || $request->page < 1 ? 1 : (int) $request->page;
         $count = !isset($request->count) || $request->count == '{count}' || $request->count < 1 ? 10 : (int) $request->count;
 
-
         foreach ($url->keywords as $i => $keyword) {
             if($i >= $page * $count) {
                 break;
@@ -1402,7 +1408,6 @@ class ImportStrategyController extends Controller
             }
         }
 
-        // @TODO look for better pagination solution
         $totalPages = ceil($url->keywords()->count() / $count);
         $nextPage = $page + 1;
         $nextPageUrl = UrlFacade::current() . "?page=" . $nextPage;

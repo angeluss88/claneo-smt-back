@@ -484,91 +484,44 @@ class UrlController extends Controller
      */
     public function urlAggregation (UrlAggregationRequest $request): Response
     {
-        $url = URL::with(['project', 'events', 'keywords', 'urlData', 'urlKeywordData']);
+        $collection = URL::with(['project', 'events', 'keywords', 'urlData', 'urlKeywordData']);
 
         if ($request->project_id && $request->project_id !== '{project_id}') {
-            $url->where('project_id', (int) $request->project_id);
+            $collection->where('project_id', (int) $request->project_id);
         }
 
-        if($request->date_range) {
-            $url = $this->filterUrlsByDate($request->date_range, $url);
+        if($request->date_range && $request->date_range !== '{date_range}') {
+            $collection = $this->filterUrlsByDate($request->date_range, $collection);
+        }
+
+        $aggregations = [];
+        foreach ($collection->get() as $url){
+            $aggregations[] = $this->getURLAggregations($url);
         }
 
         $data = [];
-        $aggrConvRate = 0;
-        $aggrRevenue = 0;
-        $aggrOrderValue = 0;
-        $aggrBounceRate = 0;
-
-        $totalUrlKeywordDataCount = 0;
-        $aggrPosition = 0;
-        $aggrClicks = 0;
-        $aggrImpressions = 0;
-        $aggrCtr = 0;
-        $aggrSearchVolume = 0;
-
-        foreach ($url->get() as $item) {
-            /**
-             * @var UrlData $urlData
-             * @var URL $item
-             */
-            foreach ($item->urlData as $urlData) {
-                $aggrConvRate += $urlData->ecom_conversion_rate;
-                $aggrRevenue += $urlData->revenue;
-                $aggrOrderValue += $urlData->avg_order_value;
-                $aggrBounceRate += $urlData->bounce_rate;
+        foreach ($aggregations as $item) {
+            foreach ($item as $key => $value) {
+                $data[$key] = $data[$key] ?? 0;
+                $data[$key] += $value;
             }
-
-            $urlKeywordDataCount = 0;
-            $position = 0;
-            $clicks = 0;
-            $impressions = 0;
-            $ctr = 0;
-            $searchVolume = 0;
-
-            /**
-             * @var UrlKeywordData $urlKeywordData
-             */
-            foreach ($item->urlKeywordData as $urlKeywordData) {
-                $position += $urlKeywordData->position;
-                $clicks += $urlKeywordData->clicks;
-                $impressions += $urlKeywordData->impressions;
-                $ctr += $urlKeywordData->ctr;
-                $urlKeywordDataCount++;
-            }
-
-            foreach ($item->keywords as $keyword) {
-                $searchVolume += $keyword->search_volume;
-            }
-
-            $aggrPosition +=  $position;
-            $aggrClicks +=  $clicks;
-            $aggrImpressions += $impressions;
-            $aggrCtr +=  $ctr;
-            $aggrSearchVolume +=  $searchVolume;
-            $totalUrlKeywordDataCount += $urlKeywordDataCount;
         }
 
-        if($url->count() !== 0) {
-            $aggrConvRate /= $url->count();
-            $aggrOrderValue /= $url->count();
-            $aggrBounceRate /= $url->count();
+        if(isset($data['aggrConvRate'])) {
+            $data['aggrConvRate'] /= count($aggregations);
         }
-
-        if($totalUrlKeywordDataCount > 0) {
-            $aggrPosition /= $totalUrlKeywordDataCount;
-            $aggrCtr /= $totalUrlKeywordDataCount;
+        if(isset($data['aggrOrderValue'])) {
+            $data['aggrOrderValue'] /= count($aggregations);
         }
-
-        $data['avgConvRate'] =  $aggrConvRate;
-        $data['avgRevenue'] =  $aggrRevenue;
-        $data['avgOrderValue'] =  $aggrOrderValue;
-        $data['avgBounceRate'] =  $aggrBounceRate;
-        $data['aggrPosition'] =  $aggrPosition;
-        $data['aggrClicks'] =  $aggrClicks;
-        $data['aggrImpressions'] =  $aggrImpressions;
-        $data['aggrCtr'] =  $aggrCtr;
-        $data['aggrSearchVolume'] =  $aggrSearchVolume;
+        if(isset($data['aggrBounceRate'])) {
+            $data['aggrBounceRate'] /= count($aggregations);
+        }
+        if(isset($data['aggrPosition']) && isset($data['totalUrlKeywordDataCount']) && $data['totalUrlKeywordDataCount'] > 0) {
+            $data['aggrPosition'] /= $data['totalUrlKeywordDataCount'];
+        }
+        if(isset($data['aggrCtr']) && isset($data['totalUrlKeywordDataCount']) && $data['totalUrlKeywordDataCount'] > 0) {
+            $data['aggrCtr'] /= $data['totalUrlKeywordDataCount'];
+        }
 
         return response([
             'data' => $data,
@@ -705,9 +658,76 @@ class UrlController extends Controller
      */
     public function show(URL $url): Response
     {
+        $url = URL::with(['project', 'events', 'keywords', 'urlData', 'urlKeywordData', 'seoEvents'])->find($url->id);
+
+        /**
+         * @var URL $url
+         */
+        $data = $this->getURLAggregations($url);
+
+        if(isset($data['aggrPosition']) && isset($data['totalUrlKeywordDataCount']) && $data['totalUrlKeywordDataCount'] > 0) {
+            $data['aggrPosition'] /= $data['totalUrlKeywordDataCount'];
+        }
+
+        if(isset($data['aggrCtr']) && isset($data['totalUrlKeywordDataCount']) && $data['totalUrlKeywordDataCount'] > 0) {
+            $data['aggrCtr'] /= $data['totalUrlKeywordDataCount'];
+        }
+
+        foreach ($data as $k => $v){
+            $url->$k = $v;
+        }
+
         return response([
-            'url' => URL::with(['project', 'events', 'keywords', 'urlData', 'urlKeywordData', 'seoEvents'])->find($url->id),
+            'url' => $url,
         ], 200);
+    }
+
+    /**
+     * @param URL $url
+     * @return int[]
+     */
+    protected function getURLAggregations (URL $url): array
+    {
+        $data = [
+            'aggrConvRate' => 0,
+            'aggrRevenue' => 0,
+            'aggrOrderValue' => 0,
+            'aggrBounceRate' => 0,
+            'totalUrlKeywordDataCount' => 0,
+            'aggrPosition' => 0,
+            'aggrClicks' => 0,
+            'aggrImpressions' => 0,
+            'aggrCtr' => 0,
+            'aggrSearchVolume' => 0,
+        ];
+
+        /**
+         * @var UrlData $urlData
+         * @var URL $item
+         */
+        foreach ($url->urlData as $urlData) {
+            $data['aggrConvRate'] += $urlData->ecom_conversion_rate;
+            $data['aggrRevenue'] += $urlData->revenue;
+            $data['aggrOrderValue'] += $urlData->avg_order_value;
+            $data['aggrBounceRate'] += $urlData->bounce_rate;
+        }
+
+        /**
+         * @var UrlKeywordData $urlKeywordData
+         */
+        foreach ($url->urlKeywordData as $urlKeywordData) {
+            $data['aggrPosition'] += $urlKeywordData->position;
+            $data['aggrClicks'] += $urlKeywordData->clicks;
+            $data['aggrImpressions'] += $urlKeywordData->impressions;
+            $data['aggrCtr'] += $urlKeywordData->ctr;
+            $data['totalUrlKeywordDataCount']++;
+        }
+
+        foreach ($url->keywords as $keyword) {
+            $data['aggrSearchVolume'] += $keyword->search_volume;
+        }
+
+        return $data;
     }
 
     /**
