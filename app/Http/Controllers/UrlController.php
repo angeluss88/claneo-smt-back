@@ -628,7 +628,7 @@ class UrlController extends Controller
      *             @OA\Property(
      *             property="url",
      *             type="object",
-     *             ref="#/components/schemas/UrlResource",
+     *             ref="#/components/schemas/UrlAggrResource",
      *         )),
      *     ),
      *     @OA\Response(
