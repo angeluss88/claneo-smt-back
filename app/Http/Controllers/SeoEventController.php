@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\BaseIndexRequest;
 use App\Http\Requests\SeoEventStoreRequest;
 use App\Http\Requests\SeoEventUpdateRequest;
-use App\Models\Client;
 use App\Models\Event;
 use App\Models\Project;
 use App\Models\SeoEvent;
@@ -258,7 +257,7 @@ class SeoEventController extends Controller
             $seoEvent->where('entity_type', Project::class)->where('entity_id', $request->project_id);
         }
 
-        $seoEvent->orderBy('date', 'asc');
+        $seoEvent->orderBy('date', 'desc');
 
         return response([
             'seo_events' => $seoEvent->paginate($count),
