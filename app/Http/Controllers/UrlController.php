@@ -241,6 +241,11 @@ class UrlController extends Controller
     public function index(UrlIndexRequest $request): Response
     {
         $count = $request->count == '{count}' ? 10 : $request->count;
+        $count = is_null($count) ? 10 : $count;
+
+        $page = $request->page == '{page}' ? 1 : $request->page;
+        $page = is_null($page) ? 1 : $page;
+
         $customSort = ['aggrConvRate', 'aggrRevenue', 'aggrOrderValue', 'aggrBounceRate', 'aggrSearchVolume',
             'aggrPosition', 'aggrClicks', 'aggrCtr', 'aggrImpressions'];
 
@@ -386,10 +391,10 @@ class UrlController extends Controller
 
         return response([
             'urls' => new LengthAwarePaginator(
-                $url->forPage($request->page, $count),
+                $url->forPage($page, $count),
                 $url->count(),
                 $count,
-                $request->page,
+                $page,
             ),
         ], 200);
     }
