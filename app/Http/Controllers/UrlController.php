@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Response;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class UrlController extends Controller
 {
@@ -239,7 +240,7 @@ class UrlController extends Controller
     public function index(UrlIndexRequest $request): Response
     {
         $count = $request->count == '{count}' ? 10 : $request->count;
-        $customSort = ['keywords_count', 'avgConvRate', 'avgRevenue', 'avgOrderValue', 'avgBounceRate', 'avgSearchVolume',
+        $customSort = ['avgConvRate', 'avgRevenue', 'avgOrderValue', 'avgBounceRate', 'avgSearchVolume',
             'avgPosition', 'avgClicks', 'avgCtr', 'avgImpressions'];
 
         $url = URL::with(['project', 'events', 'keywords', 'urlData', 'urlKeywordData', 'seoEvents']);
@@ -297,6 +298,8 @@ class UrlController extends Controller
             $url = $this->filterUrlsByDate($request->import_date, $url);
         }
 
+        $url->withCount('keywords');
+
         if($request->sort && $request->sort !== '{sort}') {
             $sort = explode('.', $request->sort);
 
@@ -304,9 +307,7 @@ class UrlController extends Controller
                 $url->orderBy($sort[0], $sort[1]);
             }
         }
-
-        $url->withCount('keywords');
-        foreach ($url = $url->paginate($count) as $item) {
+        foreach ($url = $url->get() as $item) {
             $avgConvRate = 0;
             $avgRevenue = 0;
             $avgOrderValue = 0;
@@ -376,13 +377,17 @@ class UrlController extends Controller
             $sort = explode('.', $request->sort);
 
             if(isset($sort[0]) && isset($sort[1]) && in_array($sort[0], $customSort) && in_array($sort[1], ['asc', 'desc'])) {
-                $sortedResult = $url->getCollection()->sortBy($sort[0], SORT_REGULAR, $sort[1] == 'desc')->values();
-                $url->setCollection($sortedResult);
+                $url = $url->sortBy($sort[0], SORT_REGULAR, $sort[1] == 'desc')->values();
             }
         }
 
         return response([
-            'urls' => $url,
+            'urls' => new LengthAwarePaginator(
+                $url->forPage($request->page, $count),
+                $url->count(),
+                $count,
+                $request->page,
+            ),
         ], 200);
     }
 
