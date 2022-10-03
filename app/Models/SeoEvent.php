@@ -57,8 +57,25 @@ class SeoEvent extends Model
         'date',
     ];
 
+    protected $appends = array('type');
+
+    public function getTypeAttribute(): string
+    {
+        $type = 'unknown';
+
+        if($this->entity_type == Project::class) {
+            $type = self::PROJECT_TYPE;
+        }
+
+        if($this->entity_type == URL::class) {
+            $type = self::URL_TYPE;
+        }
+        return $type;
+    }
+
     public function entity(): MorphTo
     {
         return $this->morphTo();
     }
+
 }

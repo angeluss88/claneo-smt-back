@@ -47,8 +47,8 @@ class SeoEventResource
     /**
      * @OA\Property(
      *     title="entity_type",
-     *     description="Name of related model",
-     *     example="url",
+     *     description="Type of related model",
+     *     example="App\\Models\\Project",
      * )
      *
      * @var integer
@@ -65,17 +65,6 @@ class SeoEventResource
      * @var integer
      */
     public $entity_id;
-
-    /**
-     * @OA\Property(
-     *     title="date",
-     *     description="Date of Seo Event",
-     *     example="2023-12-31",
-     * )
-     *
-     * @var string
-     */
-    public $date;
 
     /**
      * @OA\Property(
@@ -101,11 +90,33 @@ class SeoEventResource
 
     /**
      * @OA\Property(
+     *     title="date",
+     *     description="Date of Seo Event",
+     *     example="2023-12-31T00:00:00.000000Z",
+     * )
+     *
+     * @var string
+     */
+    public $date;
+
+    /**
+     * @OA\Property(
      *     title="entity",
      *     type="object",
      *     @OA\Schema (ref="#/components/schemas/ProjectResource")
      * )
      */
     public $entity;
+
+    /**
+     * @OA\Property(
+     *     title="type",
+     *     description="Type of related model",
+     *     example="url",
+     * )
+     *
+     * @var integer
+     */
+    public $type;
 
 }
