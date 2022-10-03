@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Response;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Schema;
 
 class UrlController extends Controller
 {
@@ -240,8 +241,8 @@ class UrlController extends Controller
     public function index(UrlIndexRequest $request): Response
     {
         $count = $request->count == '{count}' ? 10 : $request->count;
-        $customSort = ['avgConvRate', 'avgRevenue', 'avgOrderValue', 'avgBounceRate', 'avgSearchVolume',
-            'avgPosition', 'avgClicks', 'avgCtr', 'avgImpressions'];
+        $customSort = ['aggrConvRate', 'aggrRevenue', 'aggrOrderValue', 'aggrBounceRate', 'aggrSearchVolume',
+            'aggrPosition', 'aggrClicks', 'aggrCtr', 'aggrImpressions'];
 
         $url = URL::with(['project', 'events', 'keywords', 'urlData', 'urlKeywordData', 'seoEvents']);
 
@@ -299,25 +300,26 @@ class UrlController extends Controller
         }
 
         $url->withCount('keywords');
+        $columnNames = Schema::getColumnListing('urls');
 
         if($request->sort && $request->sort !== '{sort}') {
             $sort = explode('.', $request->sort);
 
-            if(isset($sort[0]) && isset($sort[1]) && !in_array($sort[0], $customSort) && in_array($sort[1], ['asc', 'desc'])) {
+            if(isset($sort[0]) && isset($sort[1]) && in_array($sort[0], $columnNames) && in_array($sort[1], ['asc', 'desc'])) {
                 $url->orderBy($sort[0], $sort[1]);
             }
         }
         foreach ($url = $url->get() as $item) {
-            $avgConvRate = 0;
-            $avgRevenue = 0;
-            $avgOrderValue = 0;
-            $avgBounceRate = 0;
-            $avgSearchVolume = 0;
+            $aggrConvRate = 0;
+            $aggrRevenue = 0;
+            $aggrOrderValue = 0;
+            $aggrBounceRate = 0;
+            $aggrSearchVolume = 0;
 
-            $avgPosition = 0;
-            $avgClicks = 0;
-            $avgImpressions = 0;
-            $avgCtr = 0;
+            $aggrPosition = 0;
+            $aggrClicks = 0;
+            $aggrImpressions = 0;
+            $aggrCtr = 0;
 
             $urlDataCount = 0;
             $urlKeywordDataCount = 0;
@@ -326,51 +328,52 @@ class UrlController extends Controller
              * @var URL $item
              */
             foreach ($item->urlData as $urlData) {
-                $avgConvRate += $urlData->ecom_conversion_rate;
-                $avgRevenue += $urlData->revenue;
-                $avgOrderValue += $urlData->avg_order_value;
-                $avgBounceRate += $urlData->bounce_rate;
+                $aggrConvRate += $urlData->ecom_conversion_rate;
+                $aggrRevenue += $urlData->revenue;
+                $aggrOrderValue += $urlData->avg_order_value;
+                $aggrBounceRate += $urlData->bounce_rate;
 
                 $urlDataCount++;
             }
             if($urlDataCount !== 0) {
-                $avgConvRate /= $urlDataCount;
-                $avgOrderValue /= $urlDataCount;
-                $avgBounceRate /= $urlDataCount;
+                $aggrConvRate /= $urlDataCount;
+                $aggrOrderValue /= $urlDataCount;
+                $aggrBounceRate /= $urlDataCount;
             }
 
             /**
              * @var UrlKeywordData $urlKeywordData
              */
             foreach ($item->urlKeywordData as $urlKeywordData) {
-                $avgPosition += $urlKeywordData->position;
-                $avgClicks += $urlKeywordData->clicks;
-                $avgImpressions += $urlKeywordData->impressions;
-                $avgCtr += $urlKeywordData->ctr;
+                $aggrPosition += $urlKeywordData->position;
+                $aggrClicks += $urlKeywordData->clicks;
+                $aggrImpressions += $urlKeywordData->impressions;
+                $aggrCtr += $urlKeywordData->ctr;
 
                 $urlKeywordDataCount++;
             }
             if($urlKeywordDataCount !== 0) {
-                $avgPosition /= $urlKeywordDataCount;
-                $avgCtr /= $urlKeywordDataCount;
+                $aggrPosition /= $urlKeywordDataCount;
+                $aggrCtr /= $urlKeywordDataCount;
             }
 
             foreach ($item->keywords as $keyword) {
-                $avgSearchVolume += $keyword->search_volume;
+                $aggrSearchVolume += $keyword->search_volume;
             }
 
-            $item->setAttribute('avgConvRate', $avgConvRate);
-            $item->setAttribute('avgRevenue', $avgRevenue);
-            $item->setAttribute('avgOrderValue', $avgOrderValue);
-            $item->setAttribute('avgBounceRate', $avgBounceRate);
+            $item->setAttribute('aggrConvRate', $aggrConvRate);
+            $item->setAttribute('aggrRevenue', $aggrRevenue);
+            $item->setAttribute('aggrOrderValue', $aggrOrderValue);
+            $item->setAttribute('aggrBounceRate', $aggrBounceRate);
 
-            $item->setAttribute('avgPosition', $avgPosition);
-            $item->setAttribute('avgClicks', $avgClicks);
-            $item->setAttribute('avgImpressions', $avgImpressions);
-            $item->setAttribute('avgCtr', $avgCtr);
+            $item->setAttribute('aggrPosition', $aggrPosition);
+            $item->setAttribute('aggrClicks', $aggrClicks);
+            $item->setAttribute('aggrImpressions', $aggrImpressions);
+            $item->setAttribute('aggrCtr', $aggrCtr);
 
-            $item->setAttribute('avgSearchVolume', $avgSearchVolume);
-            $item->setAttribute('avgTrafficPotential', 'Coming soon...');
+            $item->setAttribute('aggrSearchVolume', $aggrSearchVolume);
+            $item->setAttribute('aggrTrafficPotential', 'Coming soon...');
+            $item->setAttribute('totalUrlKeywordDataCount', $urlKeywordDataCount);
         }
 
         if ($request->sort ) {
@@ -407,22 +410,22 @@ class UrlController extends Controller
      *                 collectionFormat="multi",
      *                 @OA\Items(
      *                     @OA\Property(
-     *                          property="avgConvRate",
+     *                          property="aggrConvRate",
      *                          type="integer",
      *                          example=0,
      *                     ),
      *                     @OA\Property(
-     *                          property="avgRevenue",
+     *                          property="aggrRevenue",
      *                          type="integer",
      *                          example=0,
      *                     ),
      *                     @OA\Property(
-     *                          property="avgOrderValue",
+     *                          property="aggrOrderValue",
      *                          type="integer",
      *                          example=0,
      *                     ),
      *                     @OA\Property(
-     *                          property="avgBounceRate",
+     *                          property="aggrBounceRate",
      *                          type="integer",
      *                          example=0,
      *                     ),
@@ -633,7 +636,7 @@ class UrlController extends Controller
      *             @OA\Property(
      *             property="url",
      *             type="object",
-     *             ref="#/components/schemas/UrlAggrResource",
+     *             ref="#/components/schemas/UrlResource",
      *         )),
      *     ),
      *     @OA\Response(
@@ -663,7 +666,9 @@ class UrlController extends Controller
      */
     public function show(URL $url): Response
     {
-        $url = URL::with(['project', 'events', 'keywords', 'urlData', 'urlKeywordData', 'seoEvents'])->find($url->id);
+        $url = URL::with(['project', 'events', 'keywords', 'urlData', 'urlKeywordData', 'seoEvents'])
+            ->withCount('keywords')
+            ->find($url->id);
 
         /**
          * @var URL $url
@@ -681,6 +686,8 @@ class UrlController extends Controller
         foreach ($data as $k => $v){
             $url->$k = $v;
         }
+
+        $url->setAttribute('aggrTrafficPotential', 'Coming soon...');
 
         return response([
             'url' => $url,

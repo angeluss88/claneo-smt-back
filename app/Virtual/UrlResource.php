@@ -35,6 +35,17 @@ class UrlResource
 
     /**
      * @OA\Property(
+     *     title="project_id",
+     *     description="project_id",
+     *     example=1,
+     * )
+     *
+     * @var integer
+     */
+    public $project_id;
+
+    /**
+     * @OA\Property(
      *     title="status",
      *     description="status",
      *     example="200",
@@ -54,50 +65,6 @@ class UrlResource
      * @var string
      */
     public $page_type;
-
-    /**
-     * @OA\Property(
-     *     title="ecom_conversion_rate",
-     *     description="ecom_conversion_rate",
-     *     example="null",
-     * )
-     *
-     * @var string
-     */
-    public $ecom_conversion_rate;
-
-    /**
-     * @OA\Property(
-     *     title="revenue",
-     *     description="revenue",
-     *     example="null",
-     * )
-     *
-     * @var string
-     */
-    public $revenue;
-
-    /**
-     * @OA\Property(
-     *     title="avg_order_value",
-     *     description="avg_order_value",
-     *     example="null",
-     * )
-     *
-     * @var string
-     */
-    public $avg_order_value;
-
-    /**
-     * @OA\Property(
-     *     title="bounce_rate",
-     *     description="bounce rate",
-     *     example="null",
-     * )
-     *
-     * @var string
-     */
-    public $bounce_rate;
 
     /**
      * @OA\Property(
@@ -214,113 +181,124 @@ class UrlResource
 
     /**
      * @OA\Property(
-     *     title="avgConvRate",
+     *     title="aggrConvRate",
      *     description="Average conversion rate",
      *     example=1,
      * )
      *
      * @var integer
      */
-    public $avgConvRate;
+    public $aggrConvRate;
 
     /**
      * @OA\Property(
-     *     title="avgRevenue",
+     *     title="aggrRevenue",
      *     description="Average revenue",
      *     example=1,
      * )
      *
      * @var integer
      */
-    public $avgRevenue;
+    public $aggrRevenue;
 
     /**
      * @OA\Property(
-     *     title="avgOrderValue",
+     *     title="aggrOrderValue",
      *     description="Average order value",
      *     example=10,
      * )
      *
      * @var integer
      */
-    public $avgOrderValue;
+    public $aggrOrderValue;
 
     /**
      * @OA\Property(
-     *     title="avgBounceRate",
+     *     title="aggrBounceRate",
      *     description="Average bounce rate",
      *     example=10,
      * )
      *
      * @var integer
      */
-    public $avgBounceRate;
+    public $aggrBounceRate;
 
     /**
      * @OA\Property(
-     *     title="avgPosition",
+     *     title="aggrPosition",
      *     description="Average position",
      *     example=10,
      * )
      *
      * @var integer
      */
-    public $avgPosition;
+    public $aggrPosition;
 
     /**
      * @OA\Property(
-     *     title="avgClicks",
+     *     title="aggrClicks",
      *     description="Average clicks",
      *     example=10,
      * )
      *
      * @var integer
      */
-    public $avgClicks;
+    public $aggrClicks;
 
     /**
      * @OA\Property(
-     *     title="avgImpressions",
+     *     title="aggrImpressions",
      *     description="Average impressions",
      *     example=10,
      * )
      *
      * @var integer
      */
-    public $avgImpressions;
+    public $aggrImpressions;
 
     /**
      * @OA\Property(
-     *     title="avgCtr",
+     *     title="aggrCtr",
      *     description="Average CTR",
      *     example=10,
      * )
      *
      * @var integer
      */
-    public $avgCtr;
+    public $aggrCtr;
 
     /**
      * @OA\Property(
-     *     title="avgSearchVolume",
+     *     title="aggrSearchVolume",
      *     description="Average Search Volume",
      *     example=10,
      * )
      *
      * @var integer
      */
-    public $avgSearchVolume;
+    public $aggrSearchVolume;
 
     /**
      * @OA\Property(
-     *     title="avgTrafficPotential",
+     *     title="aggrTrafficPotential",
      *     description="Average Traffic Potential",
      *     example=10,
      * )
      *
      * @var integer
      */
-    public $avgTrafficPotential;
+    public $aggrTrafficPotential;
+
+    /**
+     * @OA\Property(
+     *     title="totalUrlKeywordDataCount",
+     *     description="UrlKeywordData Count",
+     *     example=10,
+     * )
+     *
+     * @var integer
+     */
+    public $totalUrlKeywordDataCount;
 
     /**
      * @OA\Property(
@@ -350,4 +328,35 @@ class UrlResource
      * )
      */
     public $keywords;
+
+    /**
+     * @OA\Property(
+     *     title="urlData",
+     *     type="array",
+     *     collectionFormat="multi",
+     *     @OA\Items(ref="#/components/schemas/UrlDataResource")
+     * )
+     */
+    public $urlData;
+
+    /**
+     * @OA\Property(
+     *     title="url_keyword_data",
+     *     type="array",
+     *     collectionFormat="multi",
+     *     @OA\Items(ref="#/components/schemas/UrlKeywordDataResource")
+     * )
+     */
+    public $url_keyword_data;
+
+    /**
+     * @OA\Property(
+     *     title="seo_events",
+     *     type="array",
+     *     collectionFormat="multi",
+     *     @OA\Items(ref="#/components/schemas/SeoEventResource")
+     * )
+     */
+    public $seo_events;
+
 }
