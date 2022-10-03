@@ -18,7 +18,7 @@ class SeoEventController extends Controller
 {
     /**
      * @OA\Get(
-     *     path="/seo_events?page={page}&count={count}&title={title}&description={description}&search={search}&date={date}&project_id={project_id}",
+     *     path="/seo_events?page={page}&count={count}&title={title}&description={description}&search={search}&date={date}&project_id={project_id}&url_id={url_id}",
      *     operationId="seo_events_index",
      *     tags={"Seo_Events"},
      *     summary="List of SEO events",
@@ -215,6 +215,16 @@ class SeoEventController extends Controller
      *             type="integer",
      *         )
      *     ),
+     *     @OA\Parameter(
+     *         name="url_id",
+     *         in="path",
+     *         description="URL filter",
+     *         required=false,
+     *         example=1,
+     *         @OA\Schema(
+     *             type="integer",
+     *         )
+     *     ),
      *     security={
      *       {"bearerAuth": {}},
      *     },
@@ -255,6 +265,9 @@ class SeoEventController extends Controller
 
         if($request->project_id && $request->project_id !== '{project_id}') {
             $seoEvent->where('entity_type', Project::class)->where('entity_id', $request->project_id);
+        }
+        if($request->url_id && $request->url_id !== '{url_id}') {
+            $seoEvent->where('entity_type', URL::class)->where('entity_id', $request->url_id);
         }
 
         $seoEvent->orderBy('date', 'desc');
