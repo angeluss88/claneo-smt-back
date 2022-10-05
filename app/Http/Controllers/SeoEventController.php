@@ -18,7 +18,7 @@ class SeoEventController extends Controller
 {
     /**
      * @OA\Get(
-     *     path="/seo_events?page={page}&count={count}&title={title}&description={description}&search={search}&date={date}&project_id={project_id}&url_id={url_id}",
+     *     path="/seo_events?page={page}&count={count}&title={title}&description={description}&search={search}&date_range={date_range}&project_id={project_id}&url_id={url_id}",
      *     operationId="seo_events_index",
      *     tags={"Seo_Events"},
      *     summary="List of SEO events",
@@ -196,7 +196,7 @@ class SeoEventController extends Controller
      *         )
      *     ),
      *     @OA\Parameter(
-     *         name="date",
+     *         name="date_range",
      *         in="path",
      *         description="Date range filter (Y.m.d-Y.m.d)",
      *         required=false,
@@ -251,8 +251,8 @@ class SeoEventController extends Controller
             $seoEvent->where('description', 'LIKE', '%' . $request->description . '%');
         }
 
-        if ($request->date && $request->date !== '{date}') {
-            $dates = explode('-', $request->date);
+        if ($request->date_range && $request->date_range !== '{date_range}') {
+            $dates = explode('-', $request->date_range);
             if(count($dates) == 2) {
                 $from = Carbon::createFromFormat('Y.m.d', $dates[0])->subDay();
                 $to = Carbon::createFromFormat('Y.m.d', $dates[1]);
