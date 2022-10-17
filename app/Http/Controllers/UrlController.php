@@ -314,6 +314,10 @@ class UrlController extends Controller
                 $url->orderBy($sort[0], $sort[1]);
             }
         }
+        $kwCount = 0;
+        $urlCount = 0;
+        $svSum = 0;
+
         foreach ($url = $url->get() as $item) {
             $aggrConvRate = 0;
             $aggrRevenue = 0;
@@ -379,6 +383,10 @@ class UrlController extends Controller
             $item->setAttribute('aggrSearchVolume', $aggrSearchVolume);
             $item->setAttribute('aggrTrafficPotential', 'Coming soon...');
             $item->setAttribute('totalUrlKeywordDataCount', $urlKeywordDataCount);
+
+            $kwCount += $item->keywords_count;
+            $svSum += $aggrSearchVolume;
+            $urlCount++;
         }
 
         if ($request->sort ) {
@@ -390,6 +398,9 @@ class UrlController extends Controller
         }
 
         return response([
+            'kw_number' => $kwCount,
+            'url_number' => $urlCount,
+            'sv_sum' => $svSum,
             'urls' => new LengthAwarePaginator(
                 $url->forPage($page, $count),
                 $url->count(),
