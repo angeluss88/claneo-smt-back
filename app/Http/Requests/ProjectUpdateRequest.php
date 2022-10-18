@@ -45,6 +45,9 @@ class ProjectUpdateRequest extends BaseRequest
             'expand_gsc'  => [
                 Rule::in([ 0,1 ]),
             ],
+            'value_multiplier' => 'numeric',
+            'cpm' => 'numeric',
+            'brand_terms' => 'string',
 
         ];
     }

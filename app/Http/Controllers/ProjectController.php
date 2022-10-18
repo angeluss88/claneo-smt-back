@@ -189,8 +189,17 @@ class ProjectController extends Controller
             $project->where('client_id', (int) $request->client_id);
         }
 
+        foreach ($data = $project->paginate($count) as $item) {
+            if($item->cpm) {
+                $item->cpm = round($item->cpm, 2);
+            }
+            if($item->value_multiplier) {
+                $item->value_multiplier = round($item->value_multiplier, 2);
+            }
+        }
+
         return response([
-            'projects' => $project->paginate($count),
+            'projects' => $data,
         ], 200);
     }
 
@@ -243,6 +252,9 @@ class ProjectController extends Controller
             'client_id' => $fields['client_id'] ?? Client::where('name', $fields['client'])->firstOrFail()->id,
             'strategy' => $fields['strategy'] ?? Project::NO_EXPAND_STRATEGY,
             'expand_gsc' => $fields['expand_gsc'] ?? 0,
+            'value_multiplier' => isset($fields['value_multiplier']) ? round($fields['value_multiplier'], 2) : 0.00,
+            'cpm' => isset($fields['cpm']) ? round($fields['cpm'],2) : 0.00,
+            'brand_terms' => $fields['brand_terms'] ?? '',
         ]);
 
         Event::create([
@@ -302,8 +314,17 @@ class ProjectController extends Controller
      */
     public function show(Project $project): Response
     {
+        $project = Project::with(['seoEvents'])->find($project->id);
+
+        if($project->cpm) {
+            $project->cpm = round($project->cpm, 2);
+        }
+        if($project->value_multiplier) {
+            $project->value_multiplier = round($project->value_multiplier, 2);
+        }
+
         return response([
-            'project' => Project::with(['seoEvents'])->find($project->id),
+            'project' => $project,
         ], 200);
     }
 
@@ -361,6 +382,14 @@ class ProjectController extends Controller
     {
         $fields = $request->validated();
 
+        if(isset($fields['cpm'])) {
+            $fields['cpm'] = round($fields['cpm'], 2);
+        }
+
+        if(isset($fields['value_multiplier'])) {
+            $fields['value_multiplier'] = round($fields['value_multiplier'], 2);
+        }
+
         $project->fill($fields)->save();
 
         if (isset($fields['client'])) {
@@ -380,7 +409,7 @@ class ProjectController extends Controller
         ]);
 
         return response([
-            'project' => $project,
+            'project' => $project->refresh(),
         ], 200);
     }
 

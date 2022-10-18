@@ -35,17 +35,6 @@ class ProjectRequest
 
     /**
      * @OA\Property(
-     *     title="client",
-     *     description="Client name to assign",
-     *     example="Company",
-     * )
-     *
-     * @var string
-     */
-    public $client;
-
-    /**
-     * @OA\Property(
      *     title="ga_property_id",
      *     description="ga_property_id",
      *     example=""
@@ -98,4 +87,37 @@ class ProjectRequest
      * @var string
      */
     public $expand_gsc;
+
+    /**
+     * @OA\Property(
+     *     title="value_multiplier",
+     *     description="value_multiplier",
+     *     example=1.11
+     * )
+     *
+     * @var float
+     */
+    public $value_multiplier;
+
+    /**
+     * @OA\Property(
+     *     title="cpm",
+     *     description="CPM",
+     *     example=1.11
+     * )
+     *
+     * @var float
+     */
+    public $cpm;
+
+    /**
+     * @OA\Property(
+     *     title="brand_terms",
+     *     description="brand_terms",
+     *     example="lorem,ipsum,dolor"
+     * )
+     *
+     * @var string
+     */
+    public $brand_terms;
 }

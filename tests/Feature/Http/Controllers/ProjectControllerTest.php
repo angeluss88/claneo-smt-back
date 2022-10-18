@@ -51,7 +51,7 @@ class ProjectControllerTest extends TestCase
 
         $response = $this->actingAs($user)->post('/api/projects', [
             'domain' => 'test_project_for_delete',
-            'client' => $client->name,
+            'client_id' => $client->id,
             'strategy' => Project::NO_EXPAND_STRATEGY,
             'expand_gsc' => 0,
         ]);

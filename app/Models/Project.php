@@ -34,6 +34,9 @@ use Illuminate\Support\Carbon;
  * @property string|null $ua_view_id
  * @property string $strategy
  * @property integer $expand_gsc
+ * @property float $value_multiplier
+ * @property float $cpm
+ * @property string $brand_terms
  * @property-read Client|null $client
  * @property-read Collection|URL[] $urls
  * @property-read int|null $urls_count
@@ -64,6 +67,9 @@ class Project extends Model
         'ua_view_id',
         'strategy',
         'expand_gsc',
+        'value_multiplier',
+        'cpm',
+        'brand_terms',
     ];
 
     /**

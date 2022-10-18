@@ -32,6 +32,21 @@ class UrlController extends Controller
      *         description="Everything is fine",
      *         @OA\JsonContent(
      *             @OA\Property(
+     *                 property="kw_number",
+     *                 type="integer",
+     *                 example=100,
+     *             ),
+     *             @OA\Property(
+     *                 property="url_number",
+     *                 type="integer",
+     *                 example=10,
+     *             ),
+     *             @OA\Property(
+     *                 property="sv_sum",
+     *                 type="string",
+     *                 example="lorem,ipsum,dolor",
+     *             ),
+     *             @OA\Property(
      *                 property="urls",
      *                 type="array",
      *                 collectionFormat="multi",

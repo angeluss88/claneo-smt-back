@@ -40,6 +40,9 @@ class ProjectStoreRequest extends BaseRequest
                 'required',
                 Rule::in([ 0,1 ]),
             ],
+            'value_multiplier' => 'numeric',
+            'cpm' => 'numeric',
+            'brand_terms' => 'string',
         ];
     }
 }
