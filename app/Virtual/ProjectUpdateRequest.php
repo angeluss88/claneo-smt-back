@@ -5,12 +5,11 @@ namespace App\Virtual;
 /**
  * @OA\Schema(
  *     type="object",
- *     title="Project Request",
- *     description="Project Request",
- *     required={"domain", "client_id", "password_confirmation", "token"}
+ *     title="Project Update Request",
+ *     description="Project Update Request",
  * )
  */
-class ProjectRequest
+class ProjectUpdateRequest
 {
     /**
      * @OA\Property(

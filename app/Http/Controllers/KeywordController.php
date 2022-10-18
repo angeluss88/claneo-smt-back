@@ -320,7 +320,7 @@ class KeywordController extends Controller
      *     ),
      *     @OA\RequestBody(
      *         required=true,
-     *         @OA\JsonContent(ref="#/components/schemas/KeywordRequest")
+     *         @OA\JsonContent(ref="#/components/schemas/KeywordUpdateRequest")
      *     ),
      *     security={
      *       {"bearerAuth": {}},

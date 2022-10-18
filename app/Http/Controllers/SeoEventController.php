@@ -437,7 +437,7 @@ class SeoEventController extends Controller
      *     ),
      *     @OA\RequestBody(
      *         required=true,
-     *         @OA\JsonContent(ref="#/components/schemas/SeoEventRequest")
+     *         @OA\JsonContent(ref="#/components/schemas/SeoEventUpdateRequest")
      *     ),
      *     security={
      *       {"bearerAuth": {}},

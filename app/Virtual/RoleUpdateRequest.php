@@ -5,12 +5,11 @@ namespace App\Virtual;
 /**
  * @OA\Schema(
  *     type="object",
- *     title="Role Request",
- *     description="Role Request",
- *     required={"name", "description"}
+ *     title="Role Update Request",
+ *     description="Role Update Request",
  * )
  */
-class RoleRequest
+class RoleUpdateRequest
 {
     /**
      * @OA\Property(

@@ -5,12 +5,11 @@ namespace App\Virtual;
 /**
  * @OA\Schema(
  *     type="object",
- *     title="Keyword Request",
- *     description="Keyword Request",
- *     required={"keyword", "search_volume", "current_ranking_position"}
+ *     title="Keyword Update Request",
+ *     description="Keyword Update Request",
  * )
  */
-class KeywordRequest
+class KeywordUpdateRequest
 {
     /**
      * @OA\Property(

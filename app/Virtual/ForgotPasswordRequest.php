@@ -7,6 +7,7 @@ namespace App\Virtual;
  *     type="object",
  *     title="Reset Password Request",
  *     description="Reset Password Request",
+ *     required={"email"}
  * )
  */
 class ForgotPasswordRequest

@@ -191,7 +191,7 @@ class RoleController extends Controller
      *     ),
      *     @OA\RequestBody(
      *         required=true,
-     *         @OA\JsonContent(ref="#/components/schemas/RoleRequest")
+     *         @OA\JsonContent(ref="#/components/schemas/RoleUpdateRequest")
      *     ),
      *     security={
      *       {"bearerAuth": {}},

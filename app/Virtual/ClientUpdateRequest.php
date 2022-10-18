@@ -5,12 +5,11 @@ namespace App\Virtual;
 /**
  * @OA\Schema(
  *     type="object",
- *     title="Client Request",
- *     description="Client Request",
- *     required={"name"}
+ *     title="Client Update Request",
+ *     description="Client Update Request",
  * )
  */
-class ClientRequest
+class ClientUpdateRequest
 {
     /**
      * @OA\Property(

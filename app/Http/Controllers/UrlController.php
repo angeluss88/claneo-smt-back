@@ -812,7 +812,7 @@ class UrlController extends Controller
      *     ),
      *     @OA\RequestBody(
      *         required=true,
-     *         @OA\JsonContent(ref="#/components/schemas/UrlRequest")
+     *         @OA\JsonContent(ref="#/components/schemas/UrlUpdateRequest")
      *     ),
      *     security={
      *       {"bearerAuth": {}},

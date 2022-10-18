@@ -7,6 +7,7 @@ namespace App\Virtual;
  *     type="object",
  *     title="Register Request",
  *     description="Register Request",
+ *     required={"email", "first_name", "last_name",}
  * )
  */
 class RegisterRequest

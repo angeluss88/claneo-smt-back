@@ -7,6 +7,7 @@ namespace App\Virtual;
  *     type="object",
  *     title="Login Request",
  *     description="Login Request",
+ *     required={"email", "password"}
  * )
  */
 class LoginRequest

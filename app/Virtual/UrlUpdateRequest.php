@@ -5,12 +5,11 @@ namespace App\Virtual;
 /**
  * @OA\Schema(
  *     type="object",
- *     title="URL Request",
- *     description="URL Request",
- *     required={"url", "main_category"}
+ *     title="URL Update Request",
+ *     description="URL Update Request",
  * )
  */
-class UrlCreateRequest
+class UrlUpdateRequest
 {
     /**
      * @OA\Property(
@@ -99,5 +98,27 @@ class UrlCreateRequest
      * @var string
      */
     public $sub_category5;
+
+    /**
+     * @OA\Property(
+     *     title="page_type",
+     *     description="page_type",
+     *     example="page_type",
+     * )
+     *
+     * @var string
+     */
+    public $page_type;
+
+    /**
+     * @OA\Property(
+     *     title="keywords",
+     *     description="Keywords IDs",
+     *     example={1, 2},
+     * )
+     *
+     * @var string
+     */
+    public $keywords;
 
 }

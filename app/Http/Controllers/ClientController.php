@@ -318,7 +318,7 @@ class ClientController extends Controller
      *     ),
      *     @OA\RequestBody(
      *         required=true,
-     *         @OA\JsonContent(ref="#/components/schemas/ClientRequest")
+     *         @OA\JsonContent(ref="#/components/schemas/ClientUpdateRequest")
      *     ),
      *     security={
      *       {"bearerAuth": {}},

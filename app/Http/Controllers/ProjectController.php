@@ -367,7 +367,7 @@ class ProjectController extends Controller
      *     ),
      *     @OA\RequestBody(
      *         required=true,
-     *         @OA\JsonContent(ref="#/components/schemas/ProjectRequest")
+     *         @OA\JsonContent(ref="#/components/schemas/ProjectUpdateRequest")
      *     ),
      *     security={
      *       {"bearerAuth": {}},

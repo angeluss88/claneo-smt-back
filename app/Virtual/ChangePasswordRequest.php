@@ -7,6 +7,7 @@ namespace App\Virtual;
  *     type="object",
  *     title="Change Password Request",
  *     description="Change Password Request",
+ *     required={"email", "password", "password_confirmation", "token"}
  * )
  */
 class ChangePasswordRequest

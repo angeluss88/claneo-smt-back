@@ -5,12 +5,11 @@ namespace App\Virtual;
 /**
  * @OA\Schema(
  *     type="object",
- *     title="SeoEvent Request",
- *     description="SeoEvent Request",
- *     required={"title", "entity_type", "entity_id"}
+ *     title="SeoEvent Update Request",
+ *     description="SeoEvent Update Request",
  * )
  */
-class SeoEventRequest
+class SeoEventUpdateRequest
 {
     /**
      * @OA\Property(
