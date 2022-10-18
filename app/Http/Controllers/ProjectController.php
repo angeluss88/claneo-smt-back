@@ -14,7 +14,7 @@ class ProjectController extends Controller
 {
     /**
      * @OA\Get(
-     *     path="/projects?page={page}&count={count}&client_id={client_id}",
+     *     path="/projects?page={page}&count={count}&client_id={client_id}&search={search}",
      *     operationId="projects_index",
      *     tags={"Projects"},
      *     summary="Projects List",
@@ -171,6 +171,17 @@ class ProjectController extends Controller
      *             type="integer",
      *         )
      *     ),
+     *
+     *     @OA\Parameter(
+     *         name="search",
+     *         in="path",
+     *         description="Search by domain",
+     *         required=false,
+     *         example="domain",
+     *         @OA\Schema(
+     *             type="string",
+     *         )
+     *     ),
      *     security={
      *       {"bearerAuth": {}},
      *     },
@@ -184,6 +195,10 @@ class ProjectController extends Controller
         $count = $request->count == '{count}' ? 10 : $request->count;
 
         $project = Project::with('client');
+
+        if($request->search && $request->search !== '{search}') {
+            $project->where('domain', 'LIKE', '%' . $request->search . '%');
+        }
 
         if ($request->client_id && $request->client_id !== '{client_id}') {
             $project->where('client_id', (int) $request->client_id);
