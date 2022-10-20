@@ -24,7 +24,7 @@ class UrlControllerTest extends TestCase
 
         $response
             ->assertJson(function (AssertableJson $json) {
-                return $json->has('kw_number')->has('url_number')->has('sv_sum')->has('urls.data')->has('urls.total');
+                return $json->has('kw_number')->has('url_number')->has('sv_sum')->has('urls.data')->has('urls.total')->has('table_config');
             })
             ->assertStatus(200);
         $this->assertEquals(URL::count(), $response->json()['urls']['total']);
@@ -123,7 +123,7 @@ class UrlControllerTest extends TestCase
 
         $response
             ->assertJson(function (AssertableJson $json) {
-                return $json->has('url')->missing('message');
+                return $json->has('url')->has('table_config')->missing('message');
             })
             ->assertStatus(200);
     }

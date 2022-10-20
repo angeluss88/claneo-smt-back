@@ -7,6 +7,7 @@ use App\Http\Requests\UrlIndexRequest;
 use App\Http\Requests\UrlStoreRequest;
 use App\Http\Requests\UrlUpdateRequest;
 use App\Models\Event;
+use App\Models\TableConfig;
 use App\Models\URL;
 use App\Models\UrlData;
 use App\Models\UrlKeywordData;
@@ -45,6 +46,12 @@ class UrlController extends Controller
      *                 property="sv_sum",
      *                 type="string",
      *                 example="lorem,ipsum,dolor",
+     *             ),
+     *             @OA\Property(
+     *                 property="table_config",
+     *                 type="array",
+     *                 collectionFormat="multi",
+     *                 @OA\Items(ref="#/components/schemas/TableConfigResource")
      *             ),
      *             @OA\Property(
      *                 property="urls",
@@ -412,6 +419,15 @@ class UrlController extends Controller
             }
         }
 
+        $config = TableConfig::whereUserId(auth()->id())->whereTableId('urls')->orderBy('position');
+        $table_config = [];
+        foreach ($config->get() as $item) {
+            $table_config[] = [
+                'position' => $item->position,
+                'column' => $item->column,
+            ];
+        }
+
         return response([
             'kw_number' => $kwCount,
             'url_number' => $urlCount,
@@ -422,6 +438,7 @@ class UrlController extends Controller
                 $count,
                 $page,
             ),
+            'table_config' => $table_config,
         ], 200);
     }
 
@@ -668,7 +685,14 @@ class UrlController extends Controller
      *             property="url",
      *             type="object",
      *             ref="#/components/schemas/UrlResource",
-     *         )),
+     *             ),
+     *             @OA\Property(
+     *                 property="table_config",
+     *                 type="array",
+     *                 collectionFormat="multi",
+     *                 @OA\Items(ref="#/components/schemas/TableConfigResource")
+     *             ),
+     *         ),
      *     ),
      *     @OA\Response(
      *         response="401",
@@ -720,8 +744,18 @@ class UrlController extends Controller
 
         $url->setAttribute('aggrTrafficPotential', 'Coming soon...');
 
+        $config = TableConfig::whereUserId(auth()->id())->whereTableId('url')->orderBy('position');
+        $table_config = [];
+        foreach ($config->get() as $item) {
+            $table_config[] = [
+                'position' => $item->position,
+                'column' => $item->column,
+            ];
+        }
+
         return response([
             'url' => $url,
+            'table_config' => $table_config,
         ], 200);
     }
 
