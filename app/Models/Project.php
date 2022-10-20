@@ -45,6 +45,12 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Project whereStrategy($value)
  * @method static Builder|Project whereExpandGsc($expand_gsc)
  * @method static Builder|Project whereUaViewId($value)
+ * @property-read Collection|SeoEvent[] $seoEvents
+ * @property-read int|null $seo_events_count
+ * @method static Builder|Project whereBrandTerms($value)
+ * @method static Builder|Project whereClientId($value)
+ * @method static Builder|Project whereCpm($value)
+ * @method static Builder|Project whereValueMultiplier($value)
  */
 class Project extends Model
 {

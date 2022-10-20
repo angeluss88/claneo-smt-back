@@ -34,6 +34,8 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Import whereStatus($value)
  * @property-read Collection|URL[] $urls
  * @property-read Collection|URL[] $keywords
+ * @property-read int|null $keywords_count
+ * @property-read int|null $urls_count
  */
 class Import extends Model
 {

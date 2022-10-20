@@ -32,6 +32,9 @@ use Illuminate\Support\Carbon;
  * @method static Builder|UrlData whereUpdatedAt($value)
  * @method static Builder|UrlData whereUrlId($value)
  * @mixin Eloquent
+ * @property-read URL $url
+ * @method static Builder|UrlData whereAvgOrderValue($value)
+ * @method static Builder|UrlData whereDate($value)
  */
 class UrlData extends Model
 {

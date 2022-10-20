@@ -29,6 +29,7 @@ use Illuminate\Support\Carbon;
  * @property-read Collection|Project[] $projects
  * @property-read Collection|User[] $users
  * @property-read int|null $projects_count
+ * @property-read int|null $users_count
  */
 class Client extends Model
 {

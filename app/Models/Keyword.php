@@ -45,9 +45,13 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Keyword whereUpdatedAt($value)
  * @mixin Eloquent
  * @property string $current_ranking_position
- * @property-read Collection|\App\Models\Event[] $events
+ * @property-read Collection|Event[] $events
  * @property-read int|null $events_count
  * @method static Builder|Keyword whereCurrentRankingPosition($value)
+ * @property-read Collection|UrlKeyword[] $urlKeyword
+ * @property-read int|null $url_keyword_count
+ * @property-read Collection|UrlKeywordData[] $urlKeywordData
+ * @property-read int|null $url_keyword_data_count
  */
 class Keyword extends Model
 {

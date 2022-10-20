@@ -8,6 +8,7 @@ use App\Http\Controllers\KeywordController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SeoEventController;
+use App\Http\Controllers\TableConfigController;
 use App\Http\Controllers\UrlController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -59,6 +60,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/getGscAuthLink', [ImportStrategyController::class, 'getGscAuthLink'])->middleware('role:admin,SEO');
     Route::get('/import_example', [ImportStrategyController::class, 'example']);
     Route::get('/events', [EventController::class, 'index'])->middleware('role:admin');
+    Route::get('/table_config/{table}', [TableConfigController::class, 'index']);
+    Route::post('/table_config', [TableConfigController::class, 'store']);
+    Route::delete('/table_config/{table}', [TableConfigController::class, 'destroy']);
 });
 
 

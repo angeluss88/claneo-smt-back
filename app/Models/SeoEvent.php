@@ -34,6 +34,7 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Event whereCreatedAt($value)
  * @method static Builder|Event whereUpdatedAt($value)
  * @mixin Eloquent
+ * @property-read string $type
  */
 class SeoEvent extends Model
 {

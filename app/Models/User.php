@@ -61,6 +61,11 @@ use Laravel\Sanctum\PersonalAccessToken;
  * @property-read Collection|Event[] $events
  * @property-read int|null $events_count
  * @method static Builder|User whereIsSuperadmin($value)
+ * @property-read Collection|Project[] $projects
+ * @property-read int|null $projects_count
+ * @property-read Collection|TableConfig[] $tableConfig
+ * @property-read int|null $table_config_count
+ * @method static Builder|User whereClientId($value)
  */
 class User extends Authenticatable
 {
@@ -168,5 +173,14 @@ class User extends Authenticatable
     public function projects(): HasMany
     {
         return $this->hasMany(Project::class, 'client_id', 'client_id');
+    }
+
+
+    /**
+     * @return HasMany
+     */
+    public function tableConfig(): HasMany
+    {
+        return $this->hasMany(TableConfig::class);
     }
 }

@@ -31,6 +31,8 @@ use Illuminate\Support\Carbon;
  * @method static Builder|UrlKeywordData whereDate($value)
  * @method static Builder|UrlKeywordData whereUrlKeywordId($value)
  * @mixin Eloquent
+ * @property-read UrlKeyword $keyword
+ * @property-read UrlData|null $urlData
  */
 class UrlKeywordData extends Model
 {

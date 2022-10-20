@@ -57,6 +57,13 @@ use Illuminate\Support\Carbon;
  * @property-read Collection|URL[] $urls
  * @property-read Collection|UrlData[] $urlData
  * @property-read Collection|UrlKeywordData[] $urlKeywordData
+ * @property-read Collection|SeoEvent[] $seoEvents
+ * @property-read int|null $seo_events_count
+ * @property-read int|null $url_data_count
+ * @property-read Collection|UrlKeyword[] $urlKeyword
+ * @property-read int|null $url_keyword_count
+ * @property-read int|null $url_keyword_data_count
+ * @method static Builder|URL whereStatus($value)
  */
 class URL extends Model
 {
