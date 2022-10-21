@@ -645,34 +645,6 @@ class ImportStrategyController extends Controller
     }
 
     /**
-     * parse csv file workflow
-     *
-     * @param $path - path of csv file
-     * @param string $s - separator sign
-     * @param false $stop - to prevent wrong parsing
-     * @return array - array of parsed rows
-     */
-    protected function parseCsv($path, string $s = ';', bool $stop = false): array
-    {
-        $csv = [];
-        $row = 1;
-
-        if (($handle = fopen($path, "r")) !== FALSE) {
-            while (($data = fgetcsv($handle, 1000, $s)) !== FALSE) {
-                if ($stop && empty($csv) && count($data) < $stop) {
-                    break;
-                }
-                $csv[] = $data;
-                $row++;
-            }
-
-            fclose($handle);
-        }
-
-        return $csv;
-    }
-
-    /**
      * @OA\Get(
      *     path="/content_strategy_data?page={page}&count={count}&url={url}&keyword={keyword}&import_date={import_date}&project_id={project_id}&import_id={import_id}",
      *     operationId="content_strategy_data",

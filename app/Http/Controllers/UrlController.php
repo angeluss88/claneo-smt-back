@@ -2,23 +2,29 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ImportUrlsRequest;
 use App\Http\Requests\UrlAggregationRequest;
 use App\Http\Requests\UrlIndexRequest;
 use App\Http\Requests\UrlStoreRequest;
 use App\Http\Requests\UrlUpdateRequest;
 use App\Models\Event;
+use App\Models\Project;
 use App\Models\TableConfig;
 use App\Models\URL;
 use App\Models\UrlData;
 use App\Models\UrlKeywordData;
 use Auth;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Schema;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Throwable;
 
 class UrlController extends Controller
 {
@@ -936,4 +942,228 @@ class UrlController extends Controller
 
         return response([], 204);
     }
+
+    /**
+     *
+     * @OA\Post (
+     *     path="/import_urls",
+     *     operationId="import_urls",
+     *     tags={"URLs"},
+     *     summary="Import URLs",
+     *     @OA\Response(
+     *         response="204",
+     *         description="Everything is fine",
+     *     ),
+     *     @OA\Response(
+     *         response="401",
+     *         description="Unauthenticated",
+     *     ),
+     *     @OA\Response(
+     *         response="422",
+     *         description="The given data was invalid.",
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\MediaType(
+     *             mediaType="multipart/form-data",
+     *             @OA\Schema(ref="#/components/schemas/ImportStrategy")
+     *         )
+     *     ),
+     *     security={
+     *       {"bearerAuth": {}},
+     *     },
+     * )
+     *
+     * @param ImportUrlsRequest $request
+     * @return JsonResponse
+     * @throws Exception
+     */
+    public function import(ImportUrlsRequest $request): JsonResponse
+    {
+        set_time_limit (0);
+
+        try {
+            $project = Project::findOrFail($request->get('project_id'));
+            $path = $request->file('file')->getRealPath();
+            $csv = $this->parseCsv($path, ';', 2);
+
+            if (isset($csv[0]) && (count($csv[0]) < 3)) {
+                $csv = $this->parseCsv($path, ',', 2);
+            }
+
+            $headers = empty($csv) ? [] : array_flip(array_shift($csv));
+
+            $keys = $this->getKeys($project, $headers);
+
+            // empty keys mean that we don't have any of field name: field_de, field_en or *field_en
+            if (empty($keys)) {
+                return response()->json([
+                    'message' => 'URL: this field is required',
+                ], 422);
+            }
+
+            $required_fields = ['url', 'status', 'main_category', 'page_type'];
+
+            foreach ($required_fields as $required_field) {
+                if (!isset($headers[$keys[$required_field]])) {
+                    $keys[$required_field] = str_replace('Category', 'category', $keys[$required_field]);
+                    if (!isset($headers[$keys[$required_field]])) {
+                        return response()->json([
+                            'message' => $keys[$required_field] . ': this column is required',
+                        ], 422);
+                    }
+                }
+            }
+
+            $urls = []; // urls array to do mass insert after parsing.
+            $failed_rows = []; // any errors during parsing
+            $urlsForCheck = [];
+
+            // begin parsing process
+            foreach ($csv as $row_number => $row) {
+                $url = [];
+
+                // begin validation process
+                // if we don't have any of required fields - stop parse this row and add item to failed rows
+                foreach ($required_fields as $required_field) {
+                    if (!$row[$headers[$keys[$required_field]]] && $row[$headers[$keys[$required_field]]] !== "0") {
+                        $failed_rows[] = [
+                            'row' => $row_number,
+                            'attribute' => $keys[$required_field],
+                            'message' => $keys[$required_field] . ': this field is required in row #' . $row_number,
+                        ];
+                        continue 2;
+                    }
+                }
+
+                $url['url'] = $row[$headers[$keys['url']]];
+                $urlsForCheck[] = $row[$headers[$keys['url']]];
+                $url['status'] = $row[$headers[$keys['status']]];
+                $url['status'] = str_replace('NEU', 'NEW', $url['status']);
+                $url['main_category'] = $row[$headers[$keys['main_category']]];
+                $url['project_id'] = $project->id;
+                $url['page_type'] = $row[$headers[$keys['page_type']]];
+                $url['sub_category'] = isset($headers[$keys['sub_category_1']]) ? $row[$headers[$keys['sub_category_1']]] : null;
+                $url['sub_category2'] = isset($headers[$keys['sub_category_2']]) ? $row[$headers[$keys['sub_category_2']]] : null;
+                $url['sub_category3'] = isset($headers[$keys['sub_category_3']]) ? $row[$headers[$keys['sub_category_3']]] : null;
+                $url['sub_category4'] = isset($headers[$keys['sub_category_4']]) ? $row[$headers[$keys['sub_category_4']]] : null;
+                $url['sub_category5'] = isset($headers[$keys['sub_category_5']]) ? $row[$headers[$keys['sub_category_5']]] : null;
+
+                // add url item to $urls by url key (the same urls will be the same item)
+                $urls[$row[$headers[$keys['url']]]] = $url;
+            }
+            // end parsing process
+
+            // if we have fails during parsing - return all the errors
+            if (!empty($failed_rows)) {
+                return response()->json([$failed_rows], 422);
+            }
+
+            $existsUrls = URL::whereIn('url', $urlsForCheck)->count();
+
+            // if we don't have errors - create entities
+            // save all prepared urls from $urls
+            URL::upsert(array_values($urls), ['url']);
+
+        } catch (Throwable $e) {
+            throw new Exception($e->getMessage());
+        }
+
+        return response()->json([
+            'new_urls' => count($urls) - $existsUrls,
+            'updated_urls' => $existsUrls,
+        ], 201);
+    }
+
+    /**
+     * get keys mapping
+     *
+     * @param Project $project
+     * @param $headers
+     * @return array
+     */
+    protected function getKeys(Project $project, $headers): array
+    {
+        // check if we have DE field names
+        if(isset($headers[URL::URL_KEY])) {
+            return  [
+                'url' => URL::URL_KEY,
+                'page_type' => URL::PAGE_TYPE,
+                'main_category' => URL::MAIN_CATEGORY,
+                'sub_category_1' => URL::SUB_CAT_1,
+                'sub_category_2' => URL::SUB_CAT_2,
+                'sub_category_3' => URL::SUB_CAT_3,
+                'sub_category_4' => URL::SUB_CAT_4,
+                'sub_category_5' => URL::SUB_CAT_5,
+                'status' => URL::URL__STATUS,
+            ];
+        }
+
+        // check if we have EN field names
+        if(isset($headers[URL::URL_KEY_EN])) {
+            return [
+                'url' => URL::URL_KEY_EN,
+                'page_type' => URL::PAGE_TYPE_EN,
+                'main_category' => URL::MAIN_CATEGORY_EN,
+                'sub_category_1' => URL::SUB_CAT_1_EN,
+                'sub_category_2' => URL::SUB_CAT_2_EN,
+                'sub_category_3' => URL::SUB_CAT_3_EN,
+                'sub_category_4' => URL::SUB_CAT_4_EN,
+                'sub_category_5' => URL::SUB_CAT_5_EN,
+                'status' => URL::URL__STATUS_EN,
+            ];
+        }
+
+        // check if we have EN field names with '*' sign (required fields)
+        if(isset($headers['*' . URL::URL_KEY_EN])) {
+            return [
+                'url' => '*' . URL::URL_KEY_EN,
+                'page_type' => '*' . URL::PAGE_TYPE_EN,
+                'main_category' => '*' . URL::MAIN_CATEGORY_EN,
+                'sub_category_1' => URL::SUB_CAT_1_EN,
+                'sub_category_2' => URL::SUB_CAT_2_EN,
+                'sub_category_3' => URL::SUB_CAT_3_EN,
+                'sub_category_4' => URL::SUB_CAT_4_EN,
+                'sub_category_5' => URL::SUB_CAT_5_EN,
+                'status' => '*' . URL::URL__STATUS_EN,
+            ];
+        }
+
+        // if we still here - we don't have any of desired field names (or at least URL column with right name),
+        // so we return empty keys
+        return [];
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/import_urls_example",
+     *     operationId="import_urls_example",
+     *     tags={"URLs"},
+     *     summary="Download URLs import example file",
+     *     @OA\Response(
+     *         response="200",
+     *         description="Download file",
+     *     ),
+     *     @OA\Response(
+     *         response="401",
+     *         description="Unauthenticated",
+     *     ),
+     *     security={
+     *       {"bearerAuth": {}},
+     *     },
+     * )
+     *
+     * @return BinaryFileResponse
+     */
+    public function example(): BinaryFileResponse
+    {
+        $filePath = public_path(). "/files/urls_example.csv";
+
+        $headers = array(
+            'Content-Type: text/csv',
+        );
+
+        return response()->download($filePath, 'urls_example.csv', $headers);
+    }
+
 }

@@ -63,6 +63,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/table_config/{table}', [TableConfigController::class, 'index']);
     Route::post('/table_config', [TableConfigController::class, 'store']);
     Route::delete('/table_config/{table}', [TableConfigController::class, 'destroy']);
+    Route::post('/import_urls', [UrlController::class, 'import']);
+    Route::get('/import_urls_example', [UrlController::class, 'example']);
 });
 
 
