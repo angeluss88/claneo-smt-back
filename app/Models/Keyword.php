@@ -65,6 +65,7 @@ class Keyword extends Model
     const FEATURED_SNIPPET_OWNED = 'Featured Snippet für @project.domain vorhanden';
     const CURRENT_RANKING_POSITION = 'Aktuelle Ranking Position @project.domain';
     const CURRENT_RANKING_POSITION_2 = 'Kunde';
+    const CURRENT_RANKING_POSITION_3 = 'Aktuelle Ranking Position';
     const SEARCH_INTENTION = 'Suchintention';
 
     const KEYWORD_EN = 'Keyword';

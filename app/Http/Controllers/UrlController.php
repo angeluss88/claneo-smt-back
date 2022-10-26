@@ -951,8 +951,16 @@ class UrlController extends Controller
      *     tags={"URLs"},
      *     summary="Import URLs",
      *     @OA\Response(
-     *         response="204",
+     *         response="200",
      *         description="Everything is fine",
+     *         @OA\JsonContent(
+     *             @OA\Property(
+     *                 property="imported",
+     *                 type="array",
+     *                 collectionFormat="multi",
+     *                 @OA\Items(ref="#/components/schemas/ImportUrlsResponse"),
+     *             ),
+     *         ),
      *     ),
      *     @OA\Response(
      *         response="401",
