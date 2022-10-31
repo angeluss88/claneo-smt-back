@@ -216,7 +216,7 @@ class ImportStrategyController extends Controller
      */
     public function index(ImportStrategyRequest $request): Response
     {
-        $imports = Import::with(['user', 'project']);
+        $imports = Import::with(['user', 'project'])->withCount(['urls', 'keywords']);
 
         $count = $request->count == '{count}' ? 10 : $request->count;
 
@@ -241,6 +241,7 @@ class ImportStrategyController extends Controller
         foreach ($imports as $import) {
             $import->setLastGAExpandDate();
             $import->setLastGSCExpandDate();
+            $import->setSWSum();
         }
 
         return response([
@@ -291,9 +292,14 @@ class ImportStrategyController extends Controller
      */
     public function show(Import $import): Response
     {
-        $import = Import::with(['user', 'project'])->find($import->id);
+        $import = Import::with(['user', 'project'])->withCount(['urls', 'keywords'])->find($import->id);
+
+        /**
+         * @var Import $import
+         */
         $import->setLastGAExpandDate();
         $import->setLastGSCExpandDate();
+        $import->setSWSum();
 
         return response([
             'import' => $import,

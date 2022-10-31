@@ -124,4 +124,17 @@ class Import extends Model
         $this->lastGSCExpandData = $lastGSCExpandData;
     }
 
+    public function setSWSum()
+    {
+        $svSum = 0;
+        foreach ($this->keywords as $kw) {
+            /**
+             * @var Keyword $kw
+             */
+            $svSum += $kw->search_volume;
+        }
+
+        $this->svSum = $svSum;
+    }
+
 }
